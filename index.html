@@ -183,9 +183,12 @@
         <li><button class="menu-item" data-src="regicide.html" data-key="3">
           <span class="idx">3</span> REGICIDE <span class="desc">SOLO CARD BATTLE</span>
         </button></li>
+        <li><button class="menu-item" data-src="matching.html" data-key="4">
+          <span class="idx">4</span> MATCH <span class="desc">MEMORY CARD GAME</span>
+        </button></li>
       </ul>
 
-      <div class="footer-hint">PRESS 1–3 OR CLICK TO LAUNCH</div>
+      <div class="footer-hint">PRESS 1–4 OR CLICK TO LAUNCH</div>
     </div>
   </div>
 
@@ -223,7 +226,7 @@
 
   document.addEventListener('keydown', (e) => {
     if (appView.classList.contains('active')) return;
-    const map = { '1':'hp-tracker.html', '2':'scoundrel.html', '3':'regicide.html' };
+    const map = { '1':'hp-tracker.html', '2':'scoundrel.html', '3':'regicide.html', '4':'matching.html' };
     if (map[e.key]) launch(map[e.key]);
   });
 </script>
