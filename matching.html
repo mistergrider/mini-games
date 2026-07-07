@@ -254,20 +254,29 @@
   .card-back{
     font-family:'Press Start 2P', var(--font-d);
     color:var(--amber-dim);
-    font-size:clamp(13px,4.2vw,20px);
+    font-size:clamp(18px,6.5vw,30px);
   }
   .card:active .card-back{ color:var(--amber); }
   .card-front{
     transform:rotateY(180deg);
     flex-direction:column;
-    gap:1px;
+    gap:2px;
     font-family:var(--font-d);
     color:var(--amber);
     border-color:var(--amber-dim);
   }
   .card-front.red{ color:var(--red); border-color:var(--red-dim); }
-  .card-front .suit{ font-size:clamp(15px,5vw,26px); line-height:1; }
-  .card-front .rank{ font-size:clamp(11px,3.4vw,17px); line-height:1; }
+  .card-front .suit{ font-size:clamp(24px,8.5vw,40px); line-height:1; }
+  .card-front .rank{ font-size:clamp(16px,5.5vw,26px); line-height:1; }
+
+  /* Scale glyphs down slightly as the grid gets denser, so text never overflows */
+  .board[data-rows="4"] .card-back{ font-size:clamp(16px,5.5vw,26px); }
+  .board[data-rows="4"] .card-front .suit{ font-size:clamp(20px,7vw,32px); }
+  .board[data-rows="4"] .card-front .rank{ font-size:clamp(13px,4.6vw,21px); }
+
+  .board[data-rows="5"] .card-back{ font-size:clamp(14px,4.6vw,20px); }
+  .board[data-rows="5"] .card-front .suit{ font-size:clamp(16px,5.8vw,25px); }
+  .board[data-rows="5"] .card-front .rank{ font-size:clamp(11px,3.8vw,16px); }
   .card.matched .card-face{
     border-color:var(--ok);
     box-shadow:0 0 8px rgba(143,255,160,0.45) inset;
