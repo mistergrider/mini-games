@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>APP SELECT</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#050505;
+    --green:#4fff6b;
+    --green-dim:#1f7a34;
+    --white:#e8f5ea;
+    --amber:#ffb300;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  body{
+    background:var(--bg);
+    color:var(--green);
+    font-family:'Share Tech Mono', monospace;
+    overflow:hidden;
+  }
+
+  /* ---------- CRT overlay ---------- */
+  .crt::before{
+    content:"";
+    position:fixed; inset:0;
+    background:repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 1px, rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 3px);
+    pointer-events:none; z-index:500;
+  }
+
+  /* ---------- Menu screen ---------- */
+  #menu{
+    height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+  .term{
+    width:100%;
+    max-width:520px;
+    border:2px solid var(--green-dim);
+    background:#0a0a0a;
+    box-shadow:0 0 30px rgba(79,255,107,0.08), inset 0 0 40px rgba(0,0,0,0.6);
+    padding:28px 30px 34px;
+  }
+  .term-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    border-bottom:1px solid var(--green-dim);
+    padding-bottom:10px;
+    margin-bottom:22px;
+    font-size:12px;
+    letter-spacing:2px;
+    color:var(--green-dim);
+  }
+  .term-header .dots span{
+    display:inline-block;
+    width:8px;height:8px;
+    border-radius:50%;
+    background:var(--green-dim);
+    margin-left:5px;
+  }
+  .ascii-title{
+    font-family:'VT323', monospace;
+    font-size:34px;
+    text-align:center;
+    letter-spacing:4px;
+    color:var(--green);
+    text-shadow:0 0 10px rgba(79,255,107,0.5);
+    margin:0 0 2px;
+  }
+  .ascii-sub{
+    text-align:center;
+    font-size:12px;
+    color:var(--green-dim);
+    letter-spacing:3px;
+    margin-bottom:26px;
+  }
+  .prompt{
+    font-size:13px;
+    color:var(--green-dim);
+    margin-bottom:14px;
+    letter-spacing:1px;
+  }
+  .menu-list{
+    list-style:none;
+    margin:0 0 20px;
+    padding:0;
+  }
+  .menu-item{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:14px 16px;
+    margin-bottom:10px;
+    border:1px solid var(--green-dim);
+    background:transparent;
+    color:var(--white);
+    font-family:'Share Tech Mono', monospace;
+    font-size:16px;
+    letter-spacing:1px;
+    width:100%;
+    text-align:left;
+    cursor:pointer;
+    transition:all .12s;
+  }
+  .menu-item .idx{
+    color:var(--green);
+    font-family:'VT323', monospace;
+    font-size:20px;
+    width:24px;
+  }
+  .menu-item .desc{
+    margin-left:auto;
+    font-size:11px;
+    color:var(--green-dim);
+    letter-spacing:1px;
+  }
+  .menu-item:hover, .menu-item.sel{
+    background:rgba(79,255,107,0.08);
+    border-color:var(--green);
+    color:var(--green);
+  }
+  .menu-item:hover .desc, .menu-item.sel .desc{ color:var(--green-dim); }
+  .footer-hint{
+    font-size:11px;
+    color:var(--green-dim);
+    letter-spacing:1px;
+    text-align:center;
+  }
+  .blink{ animation:blink 1s steps(1) infinite; }
+  @keyframes blink{ 50%{opacity:0;} }
+
+  /* ---------- App view ---------- */
+  #appView{
+    position:fixed;
+    inset:0;
+    display:none;
+    background:#000;
+    z-index:10;
+  }
+  #appView.active{ display:block; }
+  #appFrame{
+    width:100%;
+    height:100%;
+    border:none;
+    display:block;
+  }
+  #backBtn{
+    position:fixed;
+    top:10px;
+    left:10px;
+    z-index:20;
+    font-family:'Share Tech Mono', monospace;
+    font-size:12px;
+    letter-spacing:1px;
+    background:rgba(5,5,5,0.85);
+    color:var(--green);
+    border:1px solid var(--green-dim);
+    padding:8px 12px;
+    cursor:pointer;
+    backdrop-filter:blur(2px);
+  }
+  #backBtn:hover{ background:rgba(79,255,107,0.12); border-color:var(--green); }
+</style>
+</head>
+<body class="crt">
+
+  <div id="menu">
+    <div class="term">
+      <div class="term-header">
+        <span>C:\LAUNCHER&gt; ACTIVE</span>
+        <span class="dots"><span></span><span></span><span></span></span>
+      </div>
+      <div class="ascii-title">APP SELECT</div>
+      <div class="ascii-sub">— GAME &amp; UTILITY LAUNCHER —</div>
+
+      <div class="prompt">&gt; SELECT AN APPLICATION TO RUN<span class="blink">_</span></div>
+
+      <ul class="menu-list" id="menuList">
+        <li><button class="menu-item" data-src="hp-tracker.html" data-key="1">
+          <span class="idx">1</span> COUNTER <span class="desc">HP / VALUE TRACKER</span>
+        </button></li>
+        <li><button class="menu-item" data-src="scoundrel.html" data-key="2">
+          <span class="idx">2</span> SCOUNDREL <span class="desc">DUNGEON SOLITAIRE</span>
+        </button></li>
+        <li><button class="menu-item" data-src="regicide.html" data-key="3">
+          <span class="idx">3</span> REGICIDE <span class="desc">SOLO CARD BATTLE</span>
+        </button></li>
+      </ul>
+
+      <div class="footer-hint">PRESS 1–3 OR CLICK TO LAUNCH</div>
+    </div>
+  </div>
+
+  <div id="appView">
+    <button id="backBtn">&larr; MENU</button>
+    <iframe id="appFrame" title="app"></iframe>
+  </div>
+
+<script>
+  const menu = document.getElementById('menu');
+  const appView = document.getElementById('appView');
+  const appFrame = document.getElementById('appFrame');
+  const backBtn = document.getElementById('backBtn');
+  const items = document.querySelectorAll('.menu-item');
+
+  function launch(src){
+    appFrame.src = src;
+    menu.style.display = 'none';
+    appView.classList.add('active');
+  }
+
+  function backToMenu(){
+    appView.classList.remove('active');
+    menu.style.display = 'flex';
+    appFrame.src = 'about:blank';
+  }
+
+  items.forEach(btn => {
+    btn.addEventListener('click', () => launch(btn.dataset.src));
+  });
+
+  backBtn.addEventListener('click', backToMenu);
+
+  document.addEventListener('keydown', (e) => {
+    if (appView.classList.contains('active')) return;
+    const map = { '1':'hp-tracker.html', '2':'scoundrel.html', '3':'regicide.html' };
+    if (map[e.key]) launch(map[e.key]);
+  });
+</script>
+</body>
+</html>

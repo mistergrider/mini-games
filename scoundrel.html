@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCOUNDREL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#000000;
+    --panel:#000000;
+    --white:#FFFFFF;
+    --grey:#888888;
+    --green:#33FF33;
+    --card-red:#FF5555;
+    --card-cyan:#55FFFF;
+    --card-green:#55FF55;
+  }
+  *{box-sizing:border-box;image-rendering:pixelated;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    background:var(--bg);
+    color:var(--white);
+    font-family:'VT323', monospace;
+    display:flex;
+    justify-content:center;
+    padding:20px 10px 60px;
+    position:relative;
+    overflow-x:hidden;
+  }
+  /* CRT scanlines */
+  body::before{
+    content:"";
+    position:fixed;inset:0;
+    pointer-events:none;
+    background:repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,0.18) 0px,
+      rgba(0,0,0,0.18) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    z-index:200;
+  }
+
+  .wrap{width:100%;max-width:720px;}
+
+  header{
+    text-align:center;
+    margin-bottom:16px;
+  }
+  h1{
+    font-family:'Press Start 2P', monospace;
+    font-size:clamp(18px,5vw,30px);
+    margin:0;
+    color:var(--white);
+    letter-spacing:2px;
+    text-shadow:3px 3px 0 var(--green);
+  }
+  .subtitle{
+    font-size:19px;
+    color:var(--grey);
+    margin-top:8px;
+    letter-spacing:1px;
+  }
+  .subtitle::before{content:"C:\\> ";color:var(--green);}
+  .blink{animation:blink 1s steps(1) infinite;}
+  @keyframes blink{50%{opacity:0;}}
+
+  .dos-panel{
+    background:var(--panel);
+    border:3px solid var(--white);
+    box-shadow: 6px 6px 0 #1a1a1a;
+    padding:14px 16px;
+    margin-bottom:16px;
+  }
+  .panel-title{
+    font-family:'Press Start 2P', monospace;
+    font-size:10px;
+    color:var(--bg);
+    background:var(--white);
+    display:inline-block;
+    padding:3px 8px;
+    margin:-24px 0 12px -18px;
+    letter-spacing:1px;
+  }
+
+  .statbar{
+    display:flex;
+    align-items:center;
+    gap:18px;
+    flex-wrap:wrap;
+    font-size:19px;
+  }
+  .hp-row{display:flex;align-items:center;gap:10px;flex:1;min-width:220px;}
+  .hp-label{color:var(--green);letter-spacing:1px;}
+  .hp-track{
+    flex:1;
+    display:flex;
+    gap:2px;
+    height:20px;
+    background:var(--bg);
+    border:2px solid var(--grey);
+    padding:2px;
+  }
+  .hp-block{flex:1;background:#1a1a1a;}
+  .hp-block.filled{background:var(--white);}
+  .hp-block.filled.ok{background:var(--green);}
+  .hp-num{
+    color:var(--white);
+    min-width:70px;
+    text-align:right;
+    font-size:20px;
+  }
+  .mini-stats{
+    display:flex;
+    gap:18px;
+    font-size:18px;
+    color:var(--grey);
+  }
+  .mini-stats b{color:var(--green);}
+
+  .weapon-zone{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    min-height:80px;
+    margin-bottom:14px;
+    padding-bottom:10px;
+    border-bottom:2px dashed var(--grey);
+    flex-wrap:wrap;
+  }
+  .weapon-zone-label{
+    font-size:16px;
+    color:var(--green);
+    letter-spacing:1px;
+    width:80px;
+    flex-shrink:0;
+  }
+  .weapon-stack{display:flex;gap:6px;flex-wrap:wrap;}
+  .empty-note{color:var(--grey);font-size:18px;}
+  .empty-note::before{content:"[ ";}
+  .empty-note::after{content:" ]";}
+
+  .room-label{
+    font-size:16px;
+    color:var(--green);
+    letter-spacing:1px;
+    margin-bottom:10px;
+  }
+  .room{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    min-height:90px;
+    align-items:center;
+  }
+
+  /* CARD: compact rank+suit only */
+  .card{
+    width:64px;
+    height:64px;
+    background:var(--bg);
+    border:3px solid var(--white);
+    box-shadow:4px 4px 0 #1a1a1a;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    font-family:'Press Start 2P', monospace;
+    font-size:15px;
+    line-height:1.4;
+    cursor:pointer;
+    position:relative;
+    user-select:none;
+    transition:transform .08s steps(2);
+  }
+  .card:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 #1a1a1a;}
+  .card.selected{border-color:var(--green);box-shadow:4px 4px 0 var(--green);}
+  .card.disabled{cursor:default;opacity:.5;}
+  .card.disabled:hover{transform:none;box-shadow:4px 4px 0 #1a1a1a;}
+  .card.monster{color:var(--card-red);border-color:var(--card-red);}
+  .card.weapon{color:var(--card-cyan);border-color:var(--card-cyan);}
+  .card.potion{color:var(--card-green);border-color:var(--card-green);}
+  .card .val{font-size:16px;}
+  .card .sym{font-size:20px;font-family:Arial,'Segoe UI Symbol','DejaVu Sans',sans-serif;}
+
+  .card-tag{
+    position:absolute;
+    top:-11px;left:50%;
+    transform:translateX(-50%);
+    font-family:'VT323',monospace;
+    font-size:13px;
+    background:var(--white);
+    color:var(--bg);
+    padding:0 5px;
+    letter-spacing:1px;
+    white-space:nowrap;
+  }
+
+  .actions{
+    margin-top:16px;
+    display:flex;
+    gap:10px;
+    justify-content:flex-start;
+    flex-wrap:wrap;
+    align-items:center;
+    min-height:40px;
+  }
+  button{
+    font-family:'VT323', monospace;
+    font-size:19px;
+    letter-spacing:1px;
+    padding:6px 14px;
+    background:var(--bg);
+    color:var(--white);
+    border:2px solid var(--white);
+    cursor:pointer;
+  }
+  button::before{content:"[ ";}
+  button::after{content:" ]";}
+  button:hover:not(:disabled){background:var(--white);color:var(--bg);}
+  button:disabled{opacity:.4;cursor:not-allowed;}
+  button.primary{color:var(--green);border-color:var(--green);}
+  button.primary:hover:not(:disabled){background:var(--green);color:var(--bg);}
+  button.flee{color:var(--white);border-color:var(--grey);}
+  button.flee:hover:not(:disabled){background:var(--white);color:var(--bg);}
+
+  .hint{
+    color:var(--grey);
+    font-size:18px;
+    margin:0;
+  }
+  .hint::before{content:"> ";color:var(--green);}
+
+  .log{
+    background:var(--bg);
+    border:2px solid var(--grey);
+    padding:10px 12px;
+    height:150px;
+    overflow-y:auto;
+    font-size:17px;
+    line-height:1.4;
+    color:var(--grey);
+  }
+  .log p{margin:0 0 3px;}
+  .log p::before{content:"> ";color:var(--green);}
+  .log p:last-child{color:var(--white);}
+
+  .footer-row{
+    display:flex;
+    justify-content:center;
+    margin-top:14px;
+  }
+
+  .overlay{
+    position:fixed;inset:0;
+    background:rgba(0,0,0,0.85);
+    display:flex;align-items:center;justify-content:center;
+    z-index:100;
+    padding:20px;
+  }
+  .overlay.hidden{display:none;}
+  .modal{
+    background:var(--bg);
+    border:4px solid var(--white);
+    box-shadow:8px 8px 0 #1a1a1a;
+    padding:30px 26px;
+    text-align:center;
+    max-width:380px;
+  }
+  .modal h2{
+    font-family:'Press Start 2P', monospace;
+    font-size:16px;
+    margin:0 0 14px;
+    color:var(--white);
+    letter-spacing:1px;
+  }
+  .modal .score{
+    font-family:'Press Start 2P', monospace;
+    font-size:34px;
+    margin:16px 0;
+  }
+  .modal p{color:var(--grey);margin:0 0 20px;font-size:19px;}
+
+  @media (max-width:480px){
+    .card{width:54px;height:54px;font-size:13px;}
+    .weapon-zone-label{width:60px;font-size:14px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>SCOUNDREL</h1>
+    <div class="subtitle">DUNGEON CRAWL SOLITAIRE v1.0<span class="blink">_</span></div>
+  </header>
+
+  <div class="dos-panel">
+    <div class="panel-title">STATUS</div>
+    <div class="statbar">
+      <div class="hp-row">
+        <span class="hp-label">HP:</span>
+        <div class="hp-track" id="hpTrack"></div>
+        <span class="hp-num" id="hpNum">20/20</span>
+      </div>
+      <div class="mini-stats">
+        <span>ROOM <b id="roomNum">1</b></span>
+        <span>DECK <b id="deckCount">44</b></span>
+        <span>DISCARD <b id="discardCount">0</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="dos-panel">
+    <div class="panel-title">DUNGEON</div>
+
+    <div class="weapon-zone">
+      <div class="weapon-zone-label">WEAPON:</div>
+      <div class="weapon-stack" id="weaponStack"></div>
+      <div class="empty-note" id="weaponEmptyNote">FISTS ONLY</div>
+    </div>
+
+    <div class="room-label">ROOM CONTENTS:</div>
+    <div class="room" id="room"></div>
+
+    <div class="actions" id="actions"></div>
+  </div>
+
+  <div class="dos-panel">
+    <div class="panel-title">LOG</div>
+    <div class="log" id="log"></div>
+  </div>
+
+  <div class="footer-row">
+    <button id="restartBtn">NEW GAME</button>
+  </div>
+</div>
+
+<div class="overlay hidden" id="overlay">
+  <div class="modal">
+    <h2 id="modalTitle">YOU HAVE FALLEN</h2>
+    <div class="score" id="modalScore">0</div>
+    <p id="modalDesc">The dungeon claims another scoundrel.</p>
+    <button class="primary" id="modalRestart">RUN AGAIN</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const SUITS = {
+    clubs:{symbol:'♣', type:'monster'},
+    spades:{symbol:'♠', type:'monster'},
+    diamonds:{symbol:'♦', type:'weapon'},
+    hearts:{symbol:'♥', type:'potion'}
+  };
+  const RANK_NAMES = {11:'J',12:'Q',13:'K',14:'A'};
+
+  let deck, room, weapon, weaponStack, discard, hp, maxHp, roomNum,
+      fledLastRoom, roomStarted, potionUsedThisRoom, gameOver,
+      lastCard, selectedIdx;
+
+  function rankLabel(v){ return RANK_NAMES[v] || String(v); }
+
+  function makeDeck(){
+    const cards = [];
+    ['clubs','spades'].forEach(s=>{
+      for(let v=2; v<=14; v++) cards.push({suit:s, value:v});
+    });
+    ['diamonds','hearts'].forEach(s=>{
+      for(let v=2; v<=10; v++) cards.push({suit:s, value:v});
+    });
+    for(let i=cards.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [cards[i],cards[j]] = [cards[j],cards[i]];
+    }
+    return cards;
+  }
+
+  function log(msg){
+    const el = document.getElementById('log');
+    const p = document.createElement('p');
+    p.textContent = msg;
+    el.appendChild(p);
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function clearLog(){ document.getElementById('log').innerHTML=''; }
+
+  function startGame(){
+    deck = makeDeck();
+    room = [];
+    weapon = null;
+    weaponStack = [];
+    discard = [];
+    hp = 20; maxHp = 20;
+    roomNum = 1;
+    fledLastRoom = false;
+    roomStarted = false;
+    potionUsedThisRoom = false;
+    gameOver = false;
+    lastCard = null;
+    selectedIdx = null;
+    clearLog();
+    log('DESCENDING... HP 20. NO WEAPON EQUIPPED.');
+    fillRoom();
+    render();
+  }
+
+  function fillRoom(){
+    while(room.length < 4 && deck.length > 0){
+      room.push(deck.shift());
+    }
+  }
+
+  function requiredRemaining(){
+    return deck.length === 0 ? 0 : 1;
+  }
+
+  function canUseWeapon(monsterValue){
+    if(!weapon) return false;
+    if(weaponStack.length === 0) return true;
+    return monsterValue <= weaponStack[weaponStack.length-1].value;
+  }
+
+  function afterResolve(){
+    roomStarted = true;
+    const req = requiredRemaining();
+    if(room.length > req){
+      render();
+      return;
+    }
+    if(req === 0 && room.length === 0){
+      winGame();
+      return;
+    }
+    if(req === 1 && room.length === 1){
+      roomNum++;
+      fledLastRoom = false;
+      roomStarted = false;
+      potionUsedThisRoom = false;
+      fillRoom();
+      log('--- NEW ROOM LOADED ---');
+    }
+    render();
+  }
+
+  function resolveWeapon(idx){
+    const card = room.splice(idx,1)[0];
+    if(weapon){
+      discard.push(weapon, ...weaponStack);
+    }
+    weapon = card;
+    weaponStack = [];
+    lastCard = card;
+    log(`WEAPON EQUIPPED: ${rankLabel(card.value)}${SUITS[card.suit].symbol} (POWER ${card.value})`);
+    selectedIdx = null;
+    afterResolve();
+  }
+
+  function resolvePotion(idx){
+    const card = room.splice(idx,1)[0];
+    discard.push(card);
+    lastCard = card;
+    if(!potionUsedThisRoom){
+      const before = hp;
+      hp = Math.min(maxHp, hp + card.value);
+      potionUsedThisRoom = true;
+      log(`POTION CONSUMED (+${card.value}). HP ${before} -> ${hp}`);
+    } else {
+      log(`POTION IGNORED: LIMIT 1 PER ROOM.`);
+    }
+    selectedIdx = null;
+    afterResolve();
+  }
+
+  function resolveMonster(idx, useWeapon){
+    const card = room.splice(idx,1)[0];
+    lastCard = card;
+    const name = `${rankLabel(card.value)}${SUITS[card.suit].symbol}`;
+    if(useWeapon){
+      const dmg = Math.max(0, card.value - weapon.value);
+      weaponStack.push(card);
+      hp -= dmg;
+      log(`ATTACK ${name} WITH WEAPON. DAMAGE TAKEN: ${dmg}`);
+    } else {
+      discard.push(card);
+      hp -= card.value;
+      log(`FIGHT ${name} BAREHANDED. DAMAGE TAKEN: ${card.value}`);
+    }
+    selectedIdx = null;
+    if(hp <= 0){
+      hp = 0;
+      render();
+      loseGame();
+      return;
+    }
+    afterResolve();
+  }
+
+  function fleeRoom(){
+    if(fledLastRoom || roomStarted || room.length===0) return;
+    for(let i=room.length-1;i>=0;i--) deck.push(room[i]);
+    room = [];
+    fledLastRoom = true;
+    log('FLED ROOM. CARDS SHUFFLED TO BOTTOM OF DECK.');
+    fillRoom();
+    render();
+  }
+
+  function winGame(){
+    gameOver = true;
+    let score = hp;
+    let desc = `DUNGEON CLEARED WITH ${hp} HP REMAINING.`;
+    if(hp === maxHp && lastCard && lastCard.suit==='hearts'){
+      score = hp + lastCard.value;
+      desc = `CLEARED AT FULL HP. BONUS POTION +${lastCard.value} PTS.`;
+    }
+    log(`YOU ESCAPE THE DUNGEON. FINAL SCORE: ${score}`);
+    showModal('DUNGEON CLEARED', score, desc, true);
+  }
+
+  function loseGame(){
+    gameOver = true;
+    const remaining = [...deck, ...room].filter(c => SUITS[c.suit].type==='monster');
+    const total = remaining.reduce((s,c)=>s+c.value,0);
+    const score = -total;
+    log(`YOU HAVE DIED. ${remaining.length} MONSTERS REMAINED (${total} PWR). SCORE: ${score}`);
+    showModal('YOU HAVE FALLEN', score, `${remaining.length} MONSTER(S) LEFT BELOW, TOTALING ${total} STRENGTH.`, false);
+  }
+
+  function showModal(title, score, desc, won){
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalScore').textContent = (score>0?'+':'') + score;
+    document.getElementById('modalScore').style.color = won ? 'var(--green)' : 'var(--white)';
+    document.getElementById('modalDesc').textContent = desc;
+    document.getElementById('overlay').classList.remove('hidden');
+  }
+
+  function cardEl(card, opts){
+    opts = opts||{};
+    const type = SUITS[card.suit].type;
+    const div = document.createElement('div');
+    div.className = 'card ' + type + (opts.selected?' selected':'') + (opts.disabled?' disabled':'');
+    div.innerHTML = `<span class="val">${rankLabel(card.value)}</span><span class="sym">${SUITS[card.suit].symbol}</span>`;
+    if(opts.tag){
+      const tag = document.createElement('div');
+      tag.className='card-tag';
+      tag.textContent = opts.tag;
+      div.appendChild(tag);
+    }
+    if(opts.onClick) div.addEventListener('click', opts.onClick);
+    return div;
+  }
+
+  function renderHpTrack(){
+    const track = document.getElementById('hpTrack');
+    track.innerHTML = '';
+    const totalBlocks = 20;
+    const filled = Math.round((hp/maxHp)*totalBlocks);
+    for(let i=0;i<totalBlocks;i++){
+      const b = document.createElement('div');
+      b.className = 'hp-block' + (i<filled ? (' filled'+(hp>maxHp*0.3?' ok':'')) : '');
+      track.appendChild(b);
+    }
+  }
+
+  function render(){
+    renderHpTrack();
+    document.getElementById('hpNum').textContent = `${hp}/${maxHp}`;
+    document.getElementById('roomNum').textContent = roomNum;
+    document.getElementById('deckCount').textContent = deck.length;
+    document.getElementById('discardCount').textContent = discard.length;
+
+    const wStack = document.getElementById('weaponStack');
+    const wEmpty = document.getElementById('weaponEmptyNote');
+    wStack.innerHTML = '';
+    if(weapon){
+      wEmpty.style.display='none';
+      wStack.appendChild(cardEl(weapon, {tag:'WPN'}));
+      weaponStack.forEach(m=>{
+        wStack.appendChild(cardEl(m, {tag:'DEAD'}));
+      });
+    } else {
+      wEmpty.style.display='inline-block';
+    }
+
+    const roomEl = document.getElementById('room');
+    roomEl.innerHTML = '';
+    room.forEach((card, idx)=>{
+      const el = cardEl(card, {
+        selected: selectedIdx===idx,
+        disabled: gameOver,
+        onClick: ()=>{ if(gameOver) return; selectedIdx = (selectedIdx===idx? null: idx); render(); }
+      });
+      roomEl.appendChild(el);
+    });
+
+    const actions = document.getElementById('actions');
+    actions.innerHTML = '';
+    if(gameOver){
+      const p = document.createElement('p');
+      p.className='hint';
+      p.textContent = 'RUN ENDED. START A NEW GAME BELOW.';
+      actions.appendChild(p);
+    } else if(selectedIdx !== null && room[selectedIdx]){
+      const card = room[selectedIdx];
+      const type = SUITS[card.suit].type;
+      if(type==='weapon'){
+        actions.appendChild(mkBtn(`EQUIP ${rankLabel(card.value)}${SUITS[card.suit].symbol}`, ()=>resolveWeapon(selectedIdx), true));
+      } else if(type==='potion'){
+        const label = potionUsedThisRoom ? 'DRINK (NO EFFECT)' : `DRINK (+${card.value} HP)`;
+        actions.appendChild(mkBtn(label, ()=>resolvePotion(selectedIdx), true));
+      } else if(type==='monster'){
+        actions.appendChild(mkBtn(`BAREHANDED (-${card.value} HP)`, ()=>resolveMonster(selectedIdx,false), false));
+        if(canUseWeapon(card.value)){
+          const dmg = Math.max(0, card.value - weapon.value);
+          actions.appendChild(mkBtn(`USE WEAPON (-${dmg} HP)`, ()=>resolveMonster(selectedIdx,true), true));
+        } else if(weapon){
+          const b = mkBtn(`WEAPON TOO WORN`, null, false);
+          b.disabled = true;
+          actions.appendChild(b);
+        }
+      }
+      actions.appendChild(mkBtn('CANCEL', ()=>{selectedIdx=null; render();}, false));
+    } else {
+      const canFlee = !fledLastRoom && !roomStarted && room.length>0;
+      const fleeBtn = mkBtn('FLEE ROOM', fleeRoom, false);
+      fleeBtn.classList.add('flee');
+      fleeBtn.disabled = !canFlee;
+      fleeBtn.title = fledLastRoom ? "CANNOT FLEE TWICE IN A ROW" : (roomStarted ? "TOO LATE TO FLEE" : '');
+      actions.appendChild(fleeBtn);
+      const hint = document.createElement('p');
+      hint.className='hint';
+      hint.textContent = 'SELECT A CARD TO FACE IT.';
+      actions.appendChild(hint);
+    }
+  }
+
+  function mkBtn(text, fn, primary){
+    const b = document.createElement('button');
+    b.textContent = text;
+    if(primary) b.classList.add('primary');
+    if(fn) b.addEventListener('click', fn);
+    return b;
+  }
+
+  document.getElementById('restartBtn').addEventListener('click', ()=>{
+    document.getElementById('overlay').classList.add('hidden');
+    startGame();
+  });
+  document.getElementById('modalRestart').addEventListener('click', ()=>{
+    document.getElementById('overlay').classList.add('hidden');
+    startGame();
+  });
+
+  startGame();
+})();
+</script>
+</body>
+</html>

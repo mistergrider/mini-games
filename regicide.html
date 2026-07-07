@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>REGICIDE // SOLO ENGINE</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#050402;
+    --panel:#0c0906;
+    --panel-2:#100c08;
+    --amber:#ffb300;
+    --amber-dim:#8a5f00;
+    --amber-glow: rgba(255,179,0,0.55);
+    --red:#ff5a4d;
+    --red-dim:#7a2b24;
+    --white:#e9e3d2;
+    --ok:#8fffa0;
+    --font-d:'VT323', monospace;
+    --font-b:'Share Tech Mono','Courier New', monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:radial-gradient(ellipse at 50% 0%, #0a0704 0%, var(--bg) 60%);
+    color:var(--amber);
+    font-family:var(--font-b);
+    display:flex;
+    justify-content:center;
+    padding:18px;
+    min-height:100vh;
+  }
+  .crt::before{
+    content:"";
+    position:fixed; inset:0;
+    background:repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 1px,
+      rgba(0,0,0,0.18) 2px,
+      rgba(0,0,0,0.18) 3px
+    );
+    pointer-events:none;
+    z-index:50;
+    mix-blend-mode:multiply;
+    animation:flicker 6s infinite;
+  }
+  .crt::after{
+    content:"";
+    position:fixed; inset:0;
+    background:radial-gradient(ellipse at center, rgba(0,0,0,0) 60%, rgba(0,0,0,0.55) 100%);
+    pointer-events:none;
+    z-index:51;
+  }
+  @keyframes flicker{
+    0%,100%{opacity:1;}
+    92%{opacity:1;}
+    93%{opacity:0.85;}
+    94%{opacity:1;}
+  }
+  .terminal{
+    width:100%;
+    max-width:900px;
+    border:1px solid var(--amber-dim);
+    background:var(--panel);
+    box-shadow:0 0 40px rgba(255,179,0,0.08), inset 0 0 60px rgba(0,0,0,0.6);
+    display:flex;
+    flex-direction:column;
+    min-height:640px;
+  }
+  .titlebar{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:8px 14px;
+    background:linear-gradient(180deg, #171006, #0c0805);
+    border-bottom:1px solid var(--amber-dim);
+    font-family:var(--font-d);
+    font-size:20px;
+    letter-spacing:2px;
+    color:var(--amber);
+  }
+  .dots{display:flex;gap:6px;}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--amber-dim);}
+  .screen{
+    padding:20px 22px 16px;
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  h1,h2,h3{margin:0;font-family:var(--font-d);font-weight:normal;letter-spacing:1px;}
+  .ascii-title{
+    font-family:var(--font-d);
+    font-size:15px;
+    line-height:1.15;
+    color:var(--amber);
+    text-shadow:0 0 8px var(--amber-glow);
+    white-space:pre;
+    overflow-x:auto;
+  }
+  .logo-wrap{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:4px;
+  }
+  .logo{
+    font-family:'Press Start 2P', var(--font-d);
+    font-size:26px;
+    letter-spacing:4px;
+    color:var(--amber);
+    text-shadow:
+      2px 2px 0 #7a4600,
+      3px 3px 0 #7a4600,
+      0 0 10px var(--amber-glow),
+      0 0 22px var(--amber-glow);
+    line-height:1.3;
+  }
+  .logo-sub{
+    font-family:var(--font-b);
+    font-size:11px;
+    letter-spacing:4px;
+    color:var(--amber-dim);
+  }
+  @media (max-width:520px){
+    .logo{font-size:17px; letter-spacing:2px;}
+  }
+  .muted{color:var(--amber-dim);}
+  .rule{border-top:1px dashed var(--amber-dim); margin:4px 0;}
+  a{color:var(--amber);}
+
+  /* status row */
+  .statusbar{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px 18px;
+    font-size:13px;
+    padding:8px 10px;
+    border:1px solid var(--amber-dim);
+    background:var(--panel-2);
+  }
+  .statusbar span b{color:var(--white);}
+
+  /* enemy panel */
+  .enemy-panel{
+    border:1px solid var(--amber-dim);
+    background:var(--panel-2);
+    padding:14px 16px;
+    display:flex;
+    gap:18px;
+    align-items:center;
+  }
+  .enemy-card{
+    width:74px;height:100px;
+    border:2px solid var(--amber);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    font-family:var(--font-d);
+    background:#000;
+    box-shadow:0 0 12px var(--amber-glow) inset;
+    flex-shrink:0;
+  }
+  .enemy-card.red{border-color:var(--red); box-shadow:0 0 12px rgba(255,90,77,0.45) inset;}
+  .enemy-card .suit{font-size:30px; line-height:1;}
+  .enemy-card .rank{font-size:26px; line-height:1;}
+  .enemy-info{flex:1; min-width:220px;}
+  .enemy-name{font-family:var(--font-d); font-size:24px; letter-spacing:1px; color:var(--white);}
+  .enemy-name.red{color:var(--red);}
+  .barline{font-size:13px; margin-top:4px; display:flex; gap:10px; flex-wrap:wrap;}
+  .bar{font-family:var(--font-b); letter-spacing:0px;}
+  .bar .fill{color:var(--amber); text-shadow:0 0 6px var(--amber-glow);}
+  .bar.hp.low .fill{color:var(--red); text-shadow:0 0 6px rgba(255,90,77,0.6);}
+  .bar .empty{color:#3a2c10;}
+  .immune-note{color:var(--red); font-size:12px; margin-top:6px;}
+
+  /* combo info */
+  .combo-info{
+    font-size:13px;
+    padding:8px 10px;
+    border:1px dashed var(--amber-dim);
+    min-height:18px;
+  }
+  .combo-info.valid{color:var(--ok);}
+  .combo-info.invalid{color:var(--red);}
+
+  /* hand */
+  .hand-label{font-size:13px; color:var(--amber-dim); margin-bottom:2px;}
+  .hand{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    padding:10px;
+    border:1px solid var(--amber-dim);
+    background:var(--panel-2);
+    min-height:110px;
+  }
+  .card{
+    width:58px;height:84px;
+    border:1.5px solid var(--amber-dim);
+    background:#000;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    font-family:var(--font-d);
+    user-select:none;
+    transition:transform .08s ease, border-color .08s ease, box-shadow .08s ease;
+  }
+  .card:hover{border-color:var(--amber); transform:translateY(-3px);}
+  .card .suit{font-size:24px; line-height:1;}
+  .card .rank{font-size:20px; line-height:1;}
+  .card.red{color:var(--red); border-color:var(--red-dim);}
+  .card.red:hover{border-color:var(--red);}
+  .card.amber{color:var(--amber);}
+  .card.selected{
+    border-color:var(--white);
+    box-shadow:0 0 10px var(--amber-glow);
+    transform:translateY(-6px);
+    background:#161005;
+  }
+  .card.ac::after{content:"AC"; font-size:8px; color:var(--amber-dim); letter-spacing:1px; margin-top:1px;}
+  .hand-empty{color:var(--amber-dim); font-size:13px; padding:8px;}
+
+  /* controls */
+  .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button{
+    font-family:var(--font-b);
+    background:#000;
+    color:var(--amber);
+    border:1px solid var(--amber);
+    padding:9px 16px;
+    font-size:13px;
+    letter-spacing:1px;
+    cursor:pointer;
+    transition:background .1s, color .1s, box-shadow .1s;
+  }
+  button:hover:not(:disabled){background:var(--amber); color:#000; box-shadow:0 0 12px var(--amber-glow);}
+  button:disabled{opacity:0.3; cursor:not-allowed;}
+  button.danger{border-color:var(--red); color:var(--red);}
+  button.danger:hover:not(:disabled){background:var(--red); color:#000; box-shadow:0 0 12px rgba(255,90,77,0.5);}
+  button.ghost{border-color:var(--amber-dim); color:var(--amber-dim);}
+  button.ghost:hover:not(:disabled){background:var(--amber-dim); color:#000;}
+
+  /* log */
+  .log-label{font-size:13px; color:var(--amber-dim);}
+  .log{
+    flex:1;
+    min-height:150px;
+    max-height:220px;
+    overflow-y:auto;
+    border:1px solid var(--amber-dim);
+    background:#000;
+    padding:10px 12px;
+    font-size:13px;
+    line-height:1.5;
+  }
+  .log div{white-space:pre-wrap;}
+  .log .sys{color:var(--amber-dim);}
+  .log .win{color:var(--ok);}
+  .log .lose{color:var(--red);}
+  .cursor{display:inline-block; width:8px; background:var(--amber); animation:blink 1s steps(1) infinite; margin-left:2px;}
+  @keyframes blink{50%{opacity:0;}}
+
+  details.help{border:1px solid var(--amber-dim); background:var(--panel-2); padding:8px 12px; font-size:12.5px;}
+  details.help summary{cursor:pointer; color:var(--amber); font-family:var(--font-d); font-size:16px; letter-spacing:1px;}
+  details.help p{margin:6px 0;}
+  details.help b{color:var(--white);}
+
+  .center-col{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:18px; flex:1; text-align:center; padding:30px 10px;
+  }
+  .big-banner{font-family:var(--font-d); font-size:46px; letter-spacing:4px; text-shadow:0 0 14px var(--amber-glow);}
+  .big-banner.lose{color:var(--red); text-shadow:0 0 14px rgba(255,90,77,0.6);}
+  .stat-line{font-size:14px;}
+
+  @media (max-width:520px){
+    .enemy-panel{flex-direction:column; align-items:flex-start;}
+    .big-banner{font-size:32px;}
+  }
+</style>
+</head>
+<body class="crt">
+<div class="terminal">
+  <div class="titlebar">
+    <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+    REGICIDE — SOLO ENGINE v1.0
+  </div>
+  <div class="screen" id="screen"></div>
+</div>
+
+<script>
+/* ============ DATA ============ */
+const SUITS = ['♠','♥','♦','♣'];
+const SUIT_NAMES = {'♠':'SPADES','♥':'HEARTS','♦':'DIAMONDS','♣':'CLUBS'};
+const RED_SUITS = ['♥','♦'];
+
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+  return arr;
+}
+
+function makeTavernDeck(){
+  let deck=[];
+  for(const s of SUITS){
+    for(let r=2;r<=10;r++){
+      deck.push({suit:s, rank:r, code:String(r), value:r, isAC:false});
+    }
+    deck.push({suit:s, rank:'A', code:'A', value:1, isAC:true});
+  }
+  return shuffle(deck);
+}
+function makeCastleDeck(){
+  const jacks = SUITS.map(s=>({suit:s, rank:'J', code:'J', value:10, hp:20, atk:10, type:'Jack'}));
+  const queens = SUITS.map(s=>({suit:s, rank:'Q', code:'Q', value:15, hp:30, atk:15, type:'Queen'}));
+  const kings = SUITS.map(s=>({suit:s, rank:'K', code:'K', value:20, hp:40, atk:20, type:'King'}));
+  shuffle(jacks); shuffle(queens); shuffle(kings);
+  return [...jacks, ...queens, ...kings]; // index 0 = top of deck (drawn first)
+}
+function enemyName(e){
+  const names = {Jack:'JACK', Queen:'QUEEN', King:'KING'};
+  return `${names[e.type]} of ${SUIT_NAMES[e.suit]}`;
+}
+function suitClass(suit){ return RED_SUITS.includes(suit) ? 'red' : 'amber'; }
+
+/* ============ STATE ============ */
+let state = null;
+
+function newGame(){
+  state = {
+    tavern: makeTavernDeck(),
+    discard: [],
+    castle: makeCastleDeck(),
+    hand: [],
+    enemy: null,
+    enemyShield: 0,
+    jestersLeft: 2,
+    jestersUsed: 0,
+    phase: 'boot', // boot -> step1 -> step4 -> ... -> gameover
+    requiredDiscard: 0,
+    cardsPlayedThisFight: [],
+    defeated: [],
+    log: [],
+    win: false,
+    tier: null,
+    selected: []
+  };
+  render();
+}
+
+function log(msg, cls){
+  state.log.push({msg, cls: cls||''});
+  render();
+  const el = document.getElementById('logbox');
+  if(el) el.scrollTop = el.scrollHeight;
+}
+
+function drawCards(n){
+  let drawn = 0;
+  while(drawn < n && state.hand.length < 8 && state.tavern.length > 0){
+    state.hand.push(state.tavern.shift());
+    drawn++;
+  }
+  return drawn;
+}
+
+function revealNextEnemy(){
+  const e = state.castle.shift();
+  state.enemy = {...e, hp: e.hp, maxHp: e.hp};
+  state.enemyShield = 0;
+  state.cardsPlayedThisFight = [];
+  state.selected = [];
+  log(`A new foe rises: ${enemyName(state.enemy)}  —  ATK ${state.enemy.atk}  HP ${state.enemy.maxHp}`, 'sys');
+}
+
+function beginCampaign(){
+  drawCards(8);
+  revealNextEnemy();
+  state.phase = 'step1';
+  render();
+}
+
+/* ============ COMBO LOGIC ============ */
+function comboValidity(cards){
+  if(cards.length === 0) return {valid:false};
+  if(cards.length === 1) return {valid:true, value:cards[0].value};
+  if(cards.length === 2){
+    const acCount = cards.filter(c=>c.isAC).length;
+    if(acCount === 2) return {valid:true, value:2};
+    if(acCount === 1){
+      const other = cards.find(c=>!c.isAC);
+      return {valid:true, value: 1 + other.value};
+    }
+  }
+  if(cards.length >= 2 && cards.length <= 4 && cards.every(c=>!c.isAC && typeof c.rank === 'number')){
+    const r = cards[0].rank;
+    if(cards.every(c=>c.rank === r)){
+      const sum = cards.reduce((a,c)=>a+c.value,0);
+      if(sum <= 10) return {valid:true, value:sum};
+    }
+  }
+  return {valid:false};
+}
+
+function cardLabel(c){ return `${c.suit}${c.code}`; }
+
+/* ============ TURN ACTIONS ============ */
+function toggleCard(i){
+  if(state.phase !== 'step1' && state.phase !== 'step4') return;
+  const pos = state.selected.indexOf(i);
+  if(pos === -1) state.selected.push(i); else state.selected.splice(pos,1);
+  render();
+}
+
+function attemptPlay(){
+  const idxs = state.selected.slice().sort((a,b)=>a-b);
+  const cards = idxs.map(i=>state.hand[i]);
+  const v = comboValidity(cards);
+  if(!v.valid){ log('⚠ Invalid selection — not a single card or a legal combo.', 'lose'); return; }
+
+  idxs.slice().sort((a,b)=>b-a).forEach(i=>state.hand.splice(i,1));
+  state.selected = [];
+
+  const suitsInPlay = new Set(cards.map(c=>c.suit));
+  const immuneSuit = state.enemy.suit;
+  const attackValue = v.value;
+  log(`You play ${cards.map(cardLabel).join(' + ')}  (attack value ${attackValue})`);
+
+  let notes = [];
+  if(suitsInPlay.has('♥')){
+    if(immuneSuit === '♥') notes.push('♥ HEARTS negated — enemy is immune');
+    else heartsHeal(attackValue);
+  }
+  if(suitsInPlay.has('♦')){
+    if(immuneSuit === '♦') notes.push('♦ DIAMONDS negated — enemy is immune');
+    else diamondsDraw(attackValue);
+  }
+  let damage = attackValue;
+  if(suitsInPlay.has('♣')){
+    if(immuneSuit === '♣') notes.push('♣ CLUBS negated — enemy is immune');
+    else { damage *= 2; log(`♣ CLUBS: damage doubled to ${damage}.`); }
+  }
+  if(suitsInPlay.has('♠')){
+    if(immuneSuit === '♠') notes.push('♠ SPADES negated — enemy is immune');
+    else { state.enemyShield += attackValue; log(`♠ SPADES: enemy attack reduced by ${attackValue} (shield now ${state.enemyShield}).`); }
+  }
+  if(notes.length) log('⚠ ' + notes.join(' / '), 'lose');
+
+  state.cardsPlayedThisFight.push(...cards);
+  state.enemy.hp -= damage;
+  log(`⚔ ${damage} damage dealt. Enemy HP: ${Math.max(state.enemy.hp,0)}/${state.enemy.maxHp}`);
+  resolveEnemyState();
+}
+
+function heartsHeal(amount){
+  if(state.discard.length === 0){ log('♥ HEARTS: discard pile is empty — nothing to recover.'); return; }
+  shuffle(state.discard);
+  const n = Math.min(amount, state.discard.length);
+  const healed = state.discard.splice(0, n);
+  state.tavern.push(...healed);
+  log(`♥ HEARTS: ${n} card(s) shuffled from the discard pile beneath the Tavern deck.`);
+}
+function diamondsDraw(amount){
+  const got = drawCards(amount);
+  log(`♦ DIAMONDS: drew ${got} card(s). Hand ${state.hand.length}/8.`);
+}
+
+function resolveEnemyState(){
+  if(state.enemy.hp <= 0){
+    const exact = state.enemy.hp === 0;
+    log(`👑 ${enemyName(state.enemy)} is DEFEATED${exact ? ' — exact strike!' : '!'}`, 'win');
+    state.discard.push(...state.cardsPlayedThisFight);
+    state.cardsPlayedThisFight = [];
+    state.defeated.push(state.enemy);
+    if(exact){
+      state.tavern.unshift({suit:state.enemy.suit, rank:state.enemy.rank, code:state.enemy.code, value:state.enemy.value, isAC:false});
+      log('The vanquished monarch is placed face-down atop the Tavern deck.');
+    } else {
+      state.discard.push({suit:state.enemy.suit, rank:state.enemy.rank, code:state.enemy.code, value:state.enemy.value, isAC:false});
+    }
+    if(state.castle.length === 0){
+      endGame(true);
+      return;
+    }
+    revealNextEnemy();
+    state.phase = 'step1';
+    render();
+  } else {
+    goToStep4();
+  }
+}
+
+function attemptYield(){
+  log('You YIELD — no card played this turn.');
+  goToStep4();
+}
+
+function goToStep4(){
+  state.selected = [];
+  const required = Math.max(0, state.enemy.atk - state.enemyShield);
+  state.requiredDiscard = required;
+  if(required === 0){
+    log('Enemy attack fully absorbed by your shields. No damage suffered.');
+    state.phase = 'step1';
+    render();
+    return;
+  }
+  const handTotal = state.hand.reduce((a,c)=>a+c.value,0);
+  if(handTotal < required){
+    log(`💀 ${enemyName(state.enemy)} strikes for ${required}. Your hand only totals ${handTotal}. You have fallen.`, 'lose');
+    endGame(false);
+    return;
+  }
+  state.phase = 'step4';
+  log(`${enemyName(state.enemy)} strikes for ${required}! Discard cards totalling at least ${required} to survive.`);
+  render();
+}
+
+function confirmDiscard(){
+  const idxs = state.selected.slice().sort((a,b)=>a-b);
+  const cards = idxs.map(i=>state.hand[i]);
+  const sum = cards.reduce((a,c)=>a+c.value,0);
+  if(sum < state.requiredDiscard){ log('⚠ Selected cards do not total enough to satisfy the attack.', 'lose'); return; }
+  idxs.slice().sort((a,b)=>b-a).forEach(i=>state.hand.splice(i,1));
+  state.discard.push(...cards);
+  state.selected = [];
+  log(`You discard ${cards.map(cardLabel).join(', ')} (total ${sum}) and survive the blow.`);
+  state.phase = 'step1';
+  render();
+}
+
+function flipJester(){
+  if(state.jestersLeft <= 0) return;
+  state.discard.push(...state.hand);
+  state.hand = [];
+  const got = drawCards(8);
+  state.jestersLeft--;
+  state.jestersUsed++;
+  state.selected = [];
+  log(`🃏 JESTER flipped! Hand discarded and refilled (${got} drawn). Jesters remaining: ${state.jestersLeft}.`, 'sys');
+  if(state.phase === 'step4'){
+    const handTotal = state.hand.reduce((a,c)=>a+c.value,0);
+    if(handTotal < state.requiredDiscard){
+      log(`💀 New hand still cannot cover ${state.requiredDiscard} damage. You have fallen.`, 'lose');
+      endGame(false);
+      return;
+    }
+  }
+  render();
+}
+
+function endGame(win){
+  state.phase = 'gameover';
+  state.win = win;
+  if(win){
+    const used = state.jestersUsed;
+    state.tier = used === 0 ? 'GOLD' : used === 1 ? 'SILVER' : 'BRONZE';
+    log(`🏆 VICTORY! All twelve monarchs have fallen. ${state.tier} VICTORY.`, 'win');
+  } else {
+    log('☠ DEFEAT. The corruption endures.', 'lose');
+  }
+  render();
+}
+
+/* ============ RENDER ============ */
+function bar(current, max, width){
+  width = width || 22;
+  const c = Math.max(0, current);
+  const filled = Math.round(width * c / max);
+  return '█'.repeat(Math.max(0,filled)) + '░'.repeat(Math.max(0,width-filled));
+}
+
+function renderCard(c, i, selected){
+  const cls = ['card', suitClass(c.suit)];
+  if(selected) cls.push('selected');
+  if(c.isAC) cls.push('ac');
+  return `<div class="${cls.join(' ')}" onclick="toggleCard(${i})">
+    <div class="suit">${c.suit}</div>
+    <div class="rank">${c.code}</div>
+  </div>`;
+}
+
+function render(){
+  const el = document.getElementById('screen');
+  if(!state || state.phase === 'boot'){
+    el.innerHTML = renderBoot();
+    return;
+  }
+  if(state.phase === 'gameover'){
+    el.innerHTML = renderGameOver();
+    return;
+  }
+
+  const enemiesLeft = state.castle.length + 1;
+  const eCls = suitClass(state.enemy.suit);
+  const hpLow = (state.enemy.hp / state.enemy.maxHp) < 0.3;
+  const effAtk = Math.max(0, state.enemy.atk - state.enemyShield);
+
+  const idxs = state.selected.slice().sort((a,b)=>a-b);
+  const selCards = idxs.map(i=>state.hand[i]);
+  let comboHtml = '';
+  if(state.phase === 'step1'){
+    if(selCards.length === 0){
+      comboHtml = `<div class="combo-info">Select a card (or a legal combo) from your hand, then PLAY — or YIELD.</div>`;
+    } else {
+      const v = comboValidity(selCards);
+      if(v.valid){
+        comboHtml = `<div class="combo-info valid">✔ ${selCards.map(cardLabel).join(' + ')}  →  attack value ${v.value}</div>`;
+      } else {
+        comboHtml = `<div class="combo-info invalid">✘ Not a legal play. Choose one card, an Animal Companion paired with one other card, or 2-4 cards of matching rank summing to 10 or less.</div>`;
+      }
+    }
+  } else if(state.phase === 'step4'){
+    const sum = selCards.reduce((a,c)=>a+c.value,0);
+    const ok = sum >= state.requiredDiscard;
+    comboHtml = `<div class="combo-info ${sum>0?(ok?'valid':'invalid'):''}">Discard required: <b>${state.requiredDiscard}</b> &nbsp;|&nbsp; Selected total: ${sum} ${ok && sum>0 ? '✔ enough' : ''}</div>`;
+  }
+
+  const handHtml = state.hand.length === 0
+    ? `<div class="hand-empty">(hand is empty)</div>`
+    : state.hand.map((c,i)=>renderCard(c, i, state.selected.includes(i))).join('');
+
+  let controlsHtml = '';
+  if(state.phase === 'step1'){
+    const v = comboValidity(state.selected.map(i=>state.hand[i]));
+    controlsHtml = `
+      <button onclick="attemptPlay()" ${v.valid ? '' : 'disabled'}>[ PLAY ]</button>
+      <button class="ghost" onclick="attemptYield()">[ YIELD ]</button>
+      <button class="danger" onclick="flipJester()" ${state.jestersLeft>0?'':'disabled'}>[ FLIP JESTER (${state.jestersLeft}) ]</button>
+    `;
+  } else if(state.phase === 'step4'){
+    const sum = state.selected.map(i=>state.hand[i]).reduce((a,c)=>a+c.value,0);
+    controlsHtml = `
+      <button onclick="confirmDiscard()" ${sum>=state.requiredDiscard ? '' : 'disabled'}>[ DISCARD &amp; SURVIVE ]</button>
+      <button class="danger" onclick="flipJester()" ${state.jestersLeft>0?'':'disabled'}>[ FLIP JESTER (${state.jestersLeft}) ]</button>
+    `;
+  }
+
+  el.innerHTML = `
+    <div class="logo-wrap">
+      <div class="logo">REGICIDE</div>
+      <div class="logo-sub">SOLO ENGINE // V1.0</div>
+    </div>
+
+    <div class="statusbar">
+      <span>ENEMIES LEFT: <b>${enemiesLeft}</b></span>
+      <span>TAVERN: <b>${state.tavern.length}</b></span>
+      <span>DISCARD: <b>${state.discard.length}</b></span>
+      <span>JESTERS: <b>${state.jestersLeft}</b></span>
+      <span>HAND: <b>${state.hand.length}/8</b></span>
+      <span>PHASE: <b>${state.phase === 'step1' ? 'YOUR TURN' : 'ENEMY STRIKES'}</b></span>
+    </div>
+
+    <div class="enemy-panel">
+      <div class="enemy-card ${eCls}">
+        <div class="suit">${state.enemy.suit}</div>
+        <div class="rank">${state.enemy.code}</div>
+      </div>
+      <div class="enemy-info">
+        <div class="enemy-name ${eCls}">${enemyName(state.enemy)}</div>
+        <div class="barline">
+          <span class="bar hp ${hpLow?'low':''}"><span class="fill">${bar(state.enemy.hp, state.enemy.maxHp)}</span></span>
+          <span>HP ${Math.max(state.enemy.hp,0)}/${state.enemy.maxHp}</span>
+        </div>
+        <div class="barline">
+          <span>ATK ${state.enemy.atk}${state.enemyShield>0 ? `  (−${state.enemyShield} shield = ${effAtk} effective)` : ''}</span>
+        </div>
+        ${state.enemy.suit ? `<div class="immune-note">⚠ Immune to ${SUIT_NAMES[state.enemy.suit]} power (${state.enemy.suit})</div>` : ''}
+      </div>
+    </div>
+
+    ${comboHtml}
+
+    <div>
+      <div class="hand-label">YOUR HAND ${state.phase==='step4' ? '— select cards to discard' : '— select a card or combo to play'}</div>
+      <div class="hand">${handHtml}</div>
+    </div>
+
+    <div class="controls">${controlsHtml}</div>
+
+    <div>
+      <div class="log-label">LOG</div>
+      <div class="log" id="logbox">${state.log.map(l=>`<div class="${l.cls}">&gt; ${escapeHtml(l.msg)}</div>`).join('')}<span class="cursor">&nbsp;</span></div>
+    </div>
+
+    <details class="help">
+      <summary>HELP // QUICK RULES</summary>
+      <p><b>Goal:</b> defeat all 12 royals (Jacks → Queens → Kings) before your hand fails you.</p>
+      <p><b>Your turn:</b> play one card, an Animal Companion (AC) paired with one other card, or 2-4 cards of the same rank summing to 10 or less — or YIELD. Then the enemy strikes back unless it was defeated.</p>
+      <p><b>Suits:</b> ♥ Hearts — shuffle that many cards from discard back under the Tavern deck. ♦ Diamonds — draw that many cards (max hand 8). ♣ Clubs — damage is doubled. ♠ Spades — reduces this enemy's attack by that amount for the rest of the fight (cumulative).</p>
+      <p><b>Immunity:</b> an enemy's own suit power never triggers against it, though the number still counts as damage.</p>
+      <p><b>Enemy strikes:</b> discard cards from hand totalling at least the enemy's (shield-reduced) attack. Face cards discard for J=10, Q=15, K=20; Animal Companions discard for 1. Can't cover it → you fall.</p>
+      <p><b>Jester:</b> twice per game, discard your whole hand and refill to 8. Use it before playing or before discarding for damage. 0 uses = GOLD, 1 = SILVER, 2 = BRONZE.</p>
+    </details>
+  `;
+  const lb = document.getElementById('logbox');
+  if(lb) lb.scrollTop = lb.scrollHeight;
+}
+
+function escapeHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderBoot(){
+  return `
+    <div class="center-col">
+      <div class="logo-wrap">
+      <div class="logo">REGICIDE</div>
+      <div class="logo-sub">SOLO ENGINE // V1.0</div>
+    </div>
+      <p class="muted">SOLO CAMPAIGN — v1.0<br>A cooperative card game of one, against twelve corrupted monarchs.</p>
+      <p style="max-width:520px; font-size:13px;">Defeat all four Jacks, then four Queens, then four Kings by playing cards from an 8-card hand.
+      Suits grant powers. Fail to survive an enemy's strike, and the kingdom stays lost.</p>
+      <button onclick="beginCampaign()">[ BEGIN CAMPAIGN ]</button>
+      <p class="muted" style="font-size:11px;">Rules adapted from Regicide by Abrahams / Badger / Richdale — solo variant.</p>
+    </div>
+  `;
+}
+
+function renderGameOver(){
+  const win = state.win;
+  return `
+    <div class="center-col">
+      <div class="big-banner ${win?'':'lose'}">${win ? 'VICTORY' : 'DEFEAT'}</div>
+      ${win ? `<div class="stat-line">Rank achieved: <b>${state.tier} VICTORY</b> (${state.jestersUsed} jester${state.jestersUsed===1?'':'s'} used)</div>` : `<div class="stat-line">Monarchs defeated: ${state.defeated.length} / 12</div>`}
+      <div class="stat-line muted">${win ? 'The corruption has been purged from all four kingdoms.' : 'Your hand could not withstand the final blow.'}</div>
+      <button onclick="newGame()">[ PLAY AGAIN ]</button>
+      <div style="width:100%; max-width:520px; text-align:left; margin-top:10px;">
+        <div class="log-label">FINAL LOG</div>
+        <div class="log" id="logbox">${state.log.map(l=>`<div class="${l.cls}">&gt; ${escapeHtml(l.msg)}</div>`).join('')}</div>
+      </div>
+    </div>
+  `;
+}
+
+newGame();
+</script>
+</body>
+</html>
