@@ -11,8 +11,7 @@
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="theme-color" content="#050402" />
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fonts.css">
 
 <style>
   :root{
@@ -279,6 +278,19 @@
     letter-spacing:2px;
     color:var(--amber-dim);
     text-align:center;
+  }
+
+  /* Readability: bolder text overall */
+  body, button, input, select {
+    font-weight: 700;
+  }
+  body, button, input, select,
+  .log, .log *, .hint, .muted, .sublabel, .footer-hint, .card, .card *,
+  .panel-title, .hp-num, .mini-stats, .weapon-zone-label, .room-label,
+  .statusbar, .enemy-name, .barline, .bar, .combo-info, .hand-label,
+  .logo-sub, .titlebar, .empty-note, .modal p, .switcher button,
+  .stat-line, details.help, .log-label {
+    text-shadow: 0.35px 0 0 currentColor, -0.35px 0 0 currentColor;
   }
 </style>
 </head>

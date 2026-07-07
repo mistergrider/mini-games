@@ -4,8 +4,7 @@
 <meta charset="UTF-8">
 <title>REGICIDE // SOLO ENGINE</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fonts.css">
 <style>
   :root{
     --bg:#050402;
@@ -284,6 +283,23 @@
   @media (max-width:520px){
     .enemy-panel{flex-direction:column; align-items:flex-start;}
     .big-banner{font-size:32px;}
+  }
+
+  /* Readability: bolder text overall */
+  body, button, input, select {
+    font-weight: 700;
+  }
+  body, button, input, select,
+  .log, .log *, .hint, .muted, .sublabel, .footer-hint, .card, .card *,
+  .panel-title, .hp-num, .mini-stats, .weapon-zone-label, .room-label,
+  .statusbar, .enemy-name, .barline, .bar, .combo-info, .hand-label,
+  .logo-sub, .titlebar, .empty-note, .modal p, .switcher button,
+  .stat-line, details.help, .log-label {
+    text-shadow: 0.35px 0 0 currentColor, -0.35px 0 0 currentColor;
+  }
+
+  h1, h2, h3 {
+    font-weight: 700;
   }
 </style>
 </head>
