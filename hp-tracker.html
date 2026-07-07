@@ -101,6 +101,28 @@
   }
   .dots{display:flex;gap:6px; margin-left:auto;}
   .dot{width:9px;height:9px;border-radius:50%;background:var(--amber-dim);}
+  .tb-back{
+    display:none;
+    align-items:center;
+    gap:4px;
+    font-family:var(--font-b);
+    font-size:11px;
+    letter-spacing:1px;
+    background:transparent;
+    border:1px solid var(--amber-dim);
+    color:var(--amber);
+    padding:4px 9px;
+    cursor:pointer;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  .tb-back:hover{ background:var(--amber); color:#000; }
+  .titlebar-label{ overflow:hidden; text-overflow:ellipsis; }
+
+  @media (max-width:420px){
+    .titlebar{ font-size:15px; padding:8px 10px; gap:8px; }
+    .tb-back{ font-size:10px; padding:4px 7px; }
+  }
 
   .screen{
     padding:26px 24px 24px;
@@ -298,7 +320,8 @@
 
 <div class="terminal">
   <div class="titlebar">
-    C:\APPS\COUNTER
+    <button class="tb-back" id="tbBack" type="button">&larr; MENU</button>
+    <span class="titlebar-label">C:\APPS\COUNTER</span>
     <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
   </div>
 
@@ -412,6 +435,21 @@
   });
 
   render();
+</script>
+
+<script>
+  (function(){
+    var btn = document.getElementById('tbBack');
+    var embedded = window.self !== window.top;
+    btn.style.display = 'inline-flex';
+    btn.addEventListener('click', function(){
+      if (embedded) {
+        try { window.parent.postMessage({ type: 'backToMenu' }, '*'); } catch (e) {}
+      } else {
+        window.location.href = 'index.html';
+      }
+    });
+  })();
 </script>
 
 </body>

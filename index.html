@@ -158,22 +158,6 @@
     border:none;
     display:block;
   }
-  #backBtn{
-    position:fixed;
-    top:10px;
-    left:10px;
-    z-index:20;
-    font-family:'Share Tech Mono', monospace;
-    font-size:12px;
-    letter-spacing:1px;
-    background:rgba(5,5,5,0.85);
-    color:var(--green);
-    border:1px solid var(--green-dim);
-    padding:8px 12px;
-    cursor:pointer;
-    backdrop-filter:blur(2px);
-  }
-  #backBtn:hover{ background:rgba(79,255,107,0.12); border-color:var(--green); }
 </style>
 </head>
 <body class="crt">
@@ -206,7 +190,6 @@
   </div>
 
   <div id="appView">
-    <button id="backBtn">&larr; MENU</button>
     <iframe id="appFrame" title="app"></iframe>
   </div>
 
@@ -214,7 +197,6 @@
   const menu = document.getElementById('menu');
   const appView = document.getElementById('appView');
   const appFrame = document.getElementById('appFrame');
-  const backBtn = document.getElementById('backBtn');
   const items = document.querySelectorAll('.menu-item');
 
   function launch(src){
@@ -233,7 +215,11 @@
     btn.addEventListener('click', () => launch(btn.dataset.src));
   });
 
-  backBtn.addEventListener('click', backToMenu);
+  // Embedded pages post this message when their own "Back to menu"
+  // button (in their titlebar) is clicked.
+  window.addEventListener('message', (e) => {
+    if (e.data && e.data.type === 'backToMenu') backToMenu();
+  });
 
   document.addEventListener('keydown', (e) => {
     if (appView.classList.contains('active')) return;
