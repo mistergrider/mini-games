@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CARD CAPTURE // SOLO ENGINE</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+  :root{
+    /* Card Capture's original variable names, remapped to the amber CRT palette */
+    --bg: #050402;
+    --bg-alt: #0c0906;
+    --panel: #0c0906;
+    --panel-2: #100c08;
+    --line: #8a5f00;
+    --khaki: #ffb300;
+    --khaki-shadow: #8a5f00;
+    --ink: #000000;
+    --gold: #ffb300;
+    --gold-dim: #8a5f00;
+    --rust: #ff5a4d;
+    --rust-bright: #ff5a4d;
+    --olive: #8fffa0;
+    --olive-bright: #8fffa0;
+    --paper: #e9e3d2;
+    --muted: #8a5f00;
+    --font-d: 'Share Tech Mono','Courier New', monospace;
+    --font-m: 'Share Tech Mono','Courier New', monospace;
+
+    /* shared theme variables, matching the other apps in the suite */
+    --amber:#ffb300;
+    --amber-dim:#8a5f00;
+    --amber-glow: rgba(255,179,0,0.55);
+    --white:#e9e3d2;
+    --ok:#8fffa0;
+    --font-b:'Share Tech Mono','Courier New', monospace;
+    --font-vt:'VT323', monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse at 20% 0%, #0a0704 0%, transparent 60%),
+      radial-gradient(ellipse at 90% 100%, #0a0704 0%, transparent 55%),
+      var(--bg);
+    color:var(--paper);
+    font-family:var(--font-m);
+    min-height:100vh;
+    padding:14px;
+  }
+  #app{width:100%;}
+
+  /* ---------- Header ---------- */
+  header{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    border-bottom:3px solid var(--line);
+    padding-bottom:12px;margin-bottom:16px;flex-wrap:wrap;gap:10px;
+  }
+  .title-block h1{
+    font-family:'Press Start 2P', var(--font-vt);
+    font-weight:400;
+    font-size:clamp(16px,4vw,24px);
+    letter-spacing:2px;
+    margin:0;
+    color:var(--khaki);
+    text-transform:uppercase;
+    text-shadow:2px 2px 0 #7a4600, 0 0 10px var(--amber-glow), 0 0 22px var(--amber-glow);
+  }
+  .title-block .sub{
+    font-size:11px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-top:2px;
+  }
+  .header-right{
+    display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  }
+  .stat{
+    font-family:var(--font-d);
+    background:var(--panel);
+    border:1px solid var(--line);
+    padding:6px 12px;
+    text-align:center;
+    min-width:64px;
+  }
+  .stat .n{font-family:var(--font-vt);font-size:24px;font-weight:400;color:var(--gold);display:block;line-height:1.1;}
+  .stat .l{font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;}
+  button.ghost{
+    background:transparent;border:1px solid var(--line);color:var(--muted);
+    font-family:var(--font-m);font-size:11px;letter-spacing:1px;padding:8px 12px;
+    cursor:pointer;text-transform:uppercase;
+  }
+  button.ghost:hover{border-color:var(--gold-dim);color:var(--khaki);}
+
+  /* ---------- Layout ---------- */
+  main{display:block;}
+
+  .zone{
+    background:var(--panel);
+    border:1px solid var(--line);
+    padding:16px;
+    margin-bottom:16px;
+    position:relative;
+  }
+  .zone-label{
+    font-family:var(--font-d);font-size:12px;letter-spacing:3px;color:var(--olive-bright);
+    text-transform:uppercase;margin:0 0 12px 0;
+    display:flex;align-items:center;gap:8px;
+  }
+  .zone-label::after{content:"";flex:1;height:1px;background:var(--line);}
+  .zone-label.danger{color:var(--rust-bright);}
+
+  .row-track{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
+  .stack-wrap{display:flex;flex-direction:column;align-items:center;gap:6px;}
+  .pos-label{font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;}
+
+  /* ---------- Cards ---------- */
+  .card{
+    width:66px;height:94px;
+    border-radius:5px;
+    position:relative;
+    display:flex;flex-direction:column;justify-content:space-between;
+    padding:5px 6px;
+    font-family:var(--font-m);font-weight:700;
+    border:1px solid var(--khaki-shadow);
+    box-shadow:0 2px 0 rgba(0,0,0,.35);
+    user-select:none;
+    transition:transform .15s ease, box-shadow .15s ease, filter .15s ease;
+    flex-shrink:0;
+  }
+  .card.face{background:#000;color:var(--khaki);}
+  .card .rank{font-size:15px;line-height:1;}
+  .card .suit{font-size:15px;line-height:1;}
+  .card .center{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:26px;pointer-events:none;
+  }
+  .card .bottom-row{transform:rotate(180deg);align-self:flex-end;}
+  .card.red{color:#ff5a4d;}
+  .card.black{color:var(--khaki);}
+  .card.vip{border:2px solid var(--gold);box-shadow:0 0 0 1px var(--gold-dim), 0 2px 0 rgba(0,0,0,.35);}
+  .card.vip .center{color:var(--gold-dim);}
+  .card .vip-tag{
+    position:absolute;top:2px;left:50%;transform:translateX(-50%);
+    font-family:var(--font-d);font-size:6px;letter-spacing:1px;color:var(--gold-dim);
+    text-transform:uppercase;white-space:nowrap;
+  }
+  .card.joker{background:var(--khaki);color:var(--rust);display:flex;align-items:center;justify-content:center;}
+  .card.joker .center{writing-mode:vertical-rl;font-family:var(--font-d);font-size:13px;letter-spacing:2px;color:var(--rust);font-weight:700;transform:none;}
+
+  .card-back{
+    width:66px;height:94px;border-radius:5px;
+    background:repeating-linear-gradient(45deg, #100c08 0 6px, #050402 6px 12px);
+    border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-d);font-size:9px;letter-spacing:1px;color:var(--muted);
+    flex-shrink:0;
+  }
+  .deck-stack{position:relative;}
+  .deck-count{
+    position:absolute;bottom:-9px;right:-9px;
+    background:var(--olive);color:var(--paper);
+    font-family:var(--font-d);font-size:11px;font-weight:600;
+    border-radius:50%;width:22px;height:22px;
+    display:flex;align-items:center;justify-content:center;
+    border:1px solid var(--bg);
+  }
+  .deck-count.rust{background:var(--rust);}
+
+  .card.empty-slot{
+    background:transparent;border:1px dashed var(--line);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .card.empty-slot .center{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;font-family:var(--font-d);}
+
+  .card.selectable{cursor:pointer;}
+  .card.selectable:hover{transform:translateY(-6px);box-shadow:0 8px 14px rgba(0,0,0,.4);}
+  .card.selected{transform:translateY(-8px);box-shadow:0 0 0 3px var(--olive-bright), 0 8px 14px rgba(0,0,0,.4);}
+  .card.targeted{box-shadow:0 0 0 3px var(--rust-bright), 0 8px 14px rgba(0,0,0,.4);transform:translateY(-8px);}
+  .card.disabled-choice{opacity:.35;filter:grayscale(60%);cursor:not-allowed;}
+  .card.at-risk{animation:pulse 1.1s infinite;}
+  @keyframes pulse{
+    0%,100%{box-shadow:0 0 0 3px var(--rust-bright), 0 2px 0 rgba(0,0,0,.35);}
+    50%{box-shadow:0 0 0 3px rgba(212,89,47,.15), 0 2px 0 rgba(0,0,0,.35);}
+  }
+  .card.joker-pending{box-shadow:0 0 0 3px var(--gold), 0 8px 14px rgba(0,0,0,.4);transform:translateY(-8px);}
+
+  /* enemy capture pile - the "do not open" dossier */
+  .danger-pile{
+    width:70px;height:98px;
+    background:var(--bg-alt);
+    border:2px solid var(--rust);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    position:relative;transform:rotate(-1.5deg);
+    box-shadow:0 2px 0 rgba(0,0,0,.35);
+  }
+  .danger-pile::before{
+    content:"CLASSIFIED";
+    position:absolute;top:36%;left:50%;
+    transform:translate(-50%,-50%) rotate(-14deg);
+    font-family:var(--font-d);font-size:11px;letter-spacing:2px;
+    color:var(--rust-bright);border:2px solid var(--rust-bright);
+    padding:2px 5px;white-space:nowrap;
+  }
+  .danger-pile .sk{font-size:20px;margin-top:20px;opacity:.8;}
+
+  /* ---------- Hand ---------- */
+  #hand-track{display:flex;gap:12px;flex-wrap:wrap;min-height:104px;align-items:flex-end;}
+  .hand-slot{display:flex;flex-direction:column;align-items:center;gap:4px;}
+  .card.hand-card{width:74px;height:104px;}
+  .card.hand-card .rank{font-size:16px;}
+  .card.hand-card .center{font-size:28px;}
+  .mimic-tag{
+    font-size:8px;letter-spacing:.5px;color:var(--gold);font-family:var(--font-m);
+    max-width:78px;text-align:center;line-height:1.2;
+  }
+
+  /* ---------- Phase / action panel (now sits under the hand) ---------- */
+  .phase-panel{display:flex;flex-direction:column;gap:16px;margin-top:16px;}
+  .phase-pill{
+    font-family:var(--font-d);font-size:13px;letter-spacing:2px;text-transform:uppercase;
+    color:var(--gold);border:1px solid var(--gold-dim);padding:8px 10px;text-align:center;
+    background:var(--panel-2);
+  }
+  #instructions{font-size:12.5px;line-height:1.55;color:var(--khaki);min-height:40px;}
+  #action-buttons{display:flex;flex-direction:column;gap:8px;margin-top:10px;}
+  button.act{
+    font-family:var(--font-d);font-size:13px;letter-spacing:1.5px;text-transform:uppercase;
+    padding:11px 10px;border:1px solid var(--olive-bright);background:transparent;
+    color:var(--olive-bright);cursor:pointer;transition:background .15s, color .15s;
+  }
+  button.act:hover:not(:disabled){background:var(--olive-bright);color:#000;}
+  button.act:disabled{opacity:.3;cursor:not-allowed;}
+  button.act.primary{border-color:var(--gold);color:var(--gold);}
+  button.act.primary:hover:not(:disabled){background:var(--gold);color:#000;}
+  button.act.danger{border-color:var(--rust-bright);color:var(--rust-bright);}
+  button.act.danger:hover:not(:disabled){background:var(--rust-bright);color:#000;}
+  button.act.cancel{border-color:var(--line);color:var(--muted);}
+  button.act.cancel:hover{border-color:var(--muted);color:var(--paper);background:transparent;}
+
+  #spend-readout{
+    font-size:12px;color:var(--muted);margin-top:8px;line-height:1.6;
+    border-top:1px dashed var(--line);padding-top:8px;
+  }
+  #spend-readout b{color:var(--khaki);}
+  #spend-readout .ok{color:var(--olive-bright);}
+  #spend-readout .bad{color:var(--rust-bright);}
+
+  #joker-picker{margin-top:8px;padding:8px;background:var(--panel-2);border:1px solid var(--gold-dim);display:none;}
+  #joker-picker.show{display:block;}
+  #joker-picker .jp-title{font-size:11px;color:var(--gold);margin-bottom:6px;letter-spacing:1px;}
+  #joker-picker .jp-opt{
+    display:block;width:100%;text-align:left;background:transparent;border:1px solid var(--line);
+    color:var(--paper);font-family:var(--font-m);font-size:11px;padding:6px 8px;margin-bottom:5px;cursor:pointer;
+  }
+  #joker-picker .jp-opt:hover{border-color:var(--gold);}
+
+  #log{
+    background:var(--panel);border:1px solid var(--line);padding:12px;
+    font-size:11.5px;line-height:1.7;max-height:230px;overflow-y:auto;color:var(--muted);
+  }
+  #log .entry{margin-bottom:3px;}
+  #log .entry.sys{color:var(--olive-bright);}
+  #log .entry.warn{color:var(--rust-bright);}
+  #log .entry.good{color:var(--gold);}
+  #log .tag{opacity:.6;margin-right:5px;}
+
+  #log{display:none;}
+
+  /* ---------- Your Forces: simplified deck counts (no card-back visuals) ---------- */
+  .deck-count-label{
+    font-family:var(--font-m);font-size:12px;letter-spacing:1px;color:var(--muted);
+    text-transform:uppercase;
+  }
+  .deck-count-label b{
+    font-family:var(--font-vt);font-size:18px;color:var(--khaki);margin-left:6px;letter-spacing:normal;
+  }
+
+  /* ---------- Rules modal ---------- */
+  .rules-overlay{
+    position:fixed;inset:0;background:rgba(8,9,5,.92);
+    display:flex;align-items:flex-start;justify-content:center;z-index:60;padding:20px;padding-top:40px;
+  }
+  .rules-overlay.hidden{display:none;}
+  .rules-modal{
+    background:var(--panel);border:1px solid var(--line);padding:22px;max-width:540px;width:100%;
+    max-height:calc(100vh - 80px);max-height:calc(100dvh - 80px);
+    display:flex;flex-direction:column;text-align:left;
+  }
+  .rules-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-shrink:0;}
+  .rules-header h2{
+    margin:0;font-family:'Press Start 2P', var(--font-vt);font-size:15px;color:var(--gold);
+    text-shadow:0 0 10px var(--amber-glow);
+  }
+  .rules-close{
+    background:transparent;border:1px solid var(--line);color:var(--khaki);
+    width:32px;height:32px;font-size:16px;line-height:1;cursor:pointer;flex-shrink:0;
+  }
+  .rules-close:hover{border-color:var(--gold);color:var(--gold);}
+  .rules-body{overflow-y:auto;padding-right:8px;font-size:12px;line-height:1.6;color:var(--khaki);}
+  .rules-body h4{margin:14px 0 4px;color:var(--gold);font-size:11px;letter-spacing:1px;text-transform:uppercase;}
+  .rules-body h4:first-child{margin-top:0;}
+  .rules-body p{margin:0 0 6px;}
+
+  /* ---------- Overlay ---------- */
+  #overlay{
+    position:fixed;inset:0;background:rgba(8,9,5,.92);
+    display:flex;align-items:center;justify-content:center;z-index:50;padding:20px;
+  }
+  #overlay.hidden{display:none;}
+  .card-modal{
+    background:var(--panel);border:1px solid var(--gold-dim);padding:36px;max-width:480px;width:100%;text-align:center;
+  }
+  .card-modal h2{
+    font-family:'Press Start 2P', var(--font-vt);letter-spacing:1px;text-transform:uppercase;font-size:17px;margin:0 0 10px;color:var(--gold);
+    text-shadow:0 0 10px var(--amber-glow);
+  }
+  .card-modal.lose h2{color:var(--rust-bright);}
+  .card-modal p{font-size:13px;color:var(--khaki);line-height:1.6;margin:0 0 20px;}
+  .card-modal button{
+    font-family:var(--font-d);letter-spacing:2px;text-transform:uppercase;padding:12px 24px;
+    background:var(--gold);border:none;color:#000;font-weight:600;cursor:pointer;font-size:13px;
+  }
+  .card-modal.lose button{background:var(--rust-bright);}
+
+  ::-webkit-scrollbar{width:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--line);}
+
+  /* ---------- CRT overlay + terminal chrome (matches the other apps) ---------- */
+  .crt::before{
+    content:"";
+    position:fixed; inset:0;
+    background:repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 1px,
+      rgba(0,0,0,0.18) 2px,
+      rgba(0,0,0,0.18) 3px
+    );
+    pointer-events:none;
+    z-index:500;
+    mix-blend-mode:multiply;
+    animation:flicker 6s infinite;
+  }
+  .crt::after{
+    content:"";
+    position:fixed; inset:0;
+    background:radial-gradient(ellipse at center, rgba(0,0,0,0) 60%, rgba(0,0,0,0.55) 100%);
+    pointer-events:none;
+    z-index:501;
+  }
+  @keyframes flicker{
+    0%,100%{opacity:1;}
+    92%{opacity:1;}
+    93%{opacity:0.85;}
+    94%{opacity:1;}
+  }
+
+  .terminal{
+    max-width:1180px;
+    margin:0 auto;
+    border:1px solid var(--amber-dim);
+    background:var(--bg);
+    box-shadow:0 0 40px rgba(255,179,0,0.08), inset 0 0 60px rgba(0,0,0,0.6);
+  }
+  .titlebar{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:8px 14px;
+    background:linear-gradient(180deg, #171006, #0c0805);
+    border-bottom:1px solid var(--amber-dim);
+    font-family:var(--font-vt);
+    font-size:20px;
+    letter-spacing:2px;
+    color:var(--amber);
+  }
+  .dots{display:flex;gap:6px;margin-left:auto;flex-shrink:0;}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--amber-dim);}
+  .tb-back{
+    display:none;
+    align-items:center;
+    gap:4px;
+    font-family:var(--font-b);
+    font-size:11px;
+    letter-spacing:1px;
+    background:transparent;
+    border:1px solid var(--amber-dim);
+    color:var(--amber);
+    padding:4px 9px;
+    cursor:pointer;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  .tb-back:hover{ background:var(--amber); color:#000; }
+  .tb-rules{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    font-family:var(--font-b);
+    font-size:11px;
+    letter-spacing:1px;
+    background:transparent;
+    border:1px solid var(--amber-dim);
+    color:var(--amber);
+    padding:4px 9px;
+    cursor:pointer;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  .tb-rules:hover{ background:var(--amber); color:#000; }
+  .titlebar-label{ overflow:hidden; text-overflow:ellipsis; }
+  .screen{ padding:18px; }
+
+  @media (max-width:420px){
+    .titlebar{ font-size:15px; padding:8px 10px; gap:8px; }
+    .tb-back, .tb-rules{ font-size:10px; padding:4px 7px; }
+  }
+
+  /* Readability: bolder text overall */
+  body, button, input, select {
+    font-weight: 700;
+  }
+  body, button, input, select,
+  .title-block .sub, .stat .l, .zone-label, .phase-pill, #instructions,
+  #spend-readout, .mimic-tag, .pos-label, .deck-count-label, .rules-body, .titlebar {
+    text-shadow: 0.35px 0 0 currentColor, -0.35px 0 0 currentColor;
+  }
+</style>
+</head>
+<body class="crt">
+<div class="terminal">
+  <div class="titlebar">
+    <button class="tb-back" id="tbBack" type="button">&larr; MENU</button>
+    <span class="titlebar-label">C:\APPS\CARD-CAPTURE</span>
+    <button class="tb-rules" id="tbRules" type="button">RULES</button>
+    <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+  </div>
+  <div class="screen">
+<div id="app">
+
+  <header>
+    <div class="title-block">
+      <h1>Card Capture</h1>
+      <div class="sub">Solitaire Deck Builder · Designed by Lucas Gentry</div>
+    </div>
+    <div class="header-right">
+      <div class="stat"><span class="n" id="stat-round">1</span><span class="l">Round</span></div>
+      <div class="stat"><span class="n" id="stat-remaining">40</span><span class="l">Enemy Left</span></div>
+      <button class="ghost" id="btn-restart">New Game</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="board">
+
+      <div class="zone">
+        <div class="zone-label danger">Enemy Forces</div>
+        <div class="row-track" id="enemy-row-track"></div>
+      </div>
+
+      <div class="zone">
+        <div class="zone-label">Your Forces</div>
+        <div class="row-track" style="margin-bottom:16px; gap:24px;">
+          <span class="deck-count-label">Draw Deck <b id="pd-count">0</b></span>
+          <span class="deck-count-label">Discard <b id="disc-count">0</b></span>
+        </div>
+        <div class="zone-label" style="margin-bottom:10px;">Hand</div>
+        <div id="hand-track"></div>
+
+        <div class="phase-panel">
+          <div class="phase-pill" id="phase-pill">Loading…</div>
+          <div class="zone" style="margin-bottom:0;">
+            <div id="instructions">—</div>
+            <div id="action-buttons"></div>
+            <div id="spend-readout" style="display:none;"></div>
+            <div id="joker-picker"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="log"></div>
+  </main>
+</div>
+
+<div class="rules-overlay hidden" id="rulesOverlay">
+  <div class="rules-modal">
+    <div class="rules-header">
+      <h2>CARD CAPTURE — RULES</h2>
+      <button class="rules-close" id="rulesClose" type="button">&times;</button>
+    </div>
+    <div class="rules-body">
+      <h4>Goal</h4>
+      <p>Capture every enemy Ace and face card before your deck turns against you. Never let an Ace, Jack, Queen or King reach the Enemy Capture Pile — that's an instant loss.</p>
+      <h4>Round Order</h4>
+      <p><b>1. Enemy Phase</b> — gaps in the enemy row close up, then new cards are drawn to refill it.<br>
+      <b>2. Discard Phase</b> — drop any hand cards you don't want (you can't look through your discard pile later).<br>
+      <b>3. Draw Phase</b> — draw back up to 4 cards.<br>
+      <b>4. Capture Phase</b> — do exactly one of the following.</p>
+      <h4>Capture</h4>
+      <p>Spend hand cards of one suit, totaling equal or greater than an enemy card's value, to take it into your own discard pile (it'll come back through your deck later). Jack=11, Queen=12, King=13, Ace=14. A Joker copies the suit and value of one other card currently in your hand.</p>
+      <h4>Concede</h4>
+      <p>Let the enemy's Position 1 card win — it and one card of your choice go to the Enemy Capture Pile together.</p>
+      <h4>Sacrifice</h4>
+      <p>Give up two hand cards (never an Ace or face card) to the Enemy Capture Pile in exchange for sending any one enemy row card to the bottom of the enemy deck, delaying it.</p>
+      <h4>Winning</h4>
+      <p>Empty the enemy deck and enemy row completely without ever losing an Ace or face card to the Enemy Capture Pile.</p>
+      <h4>Automatic Stalemate Losses</h4>
+      <p>Two situations end the game early as unwinnable: losing so many cards of one suit to the Enemy Capture Pile that you can never again reach the value of the cheapest uncaptured enemy card in that suit; or holding a hand of nothing but Aces/face cards that can't capture anything currently in the Enemy Row, with nothing eligible to sacrifice.</p>
+    </div>
+  </div>
+</div>
+
+  </div>
+</div>
+
+<div id="overlay">
+  <div class="card-modal" id="modal">
+    <h2>Card Capture</h2>
+    <p>A solitaire deck builder. Capture every enemy Ace and face card using their own weapons and tools against them — without ever losing one of your own to the Enemy Capture Pile.</p>
+    <button id="btn-start">Begin Operation</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------------- Data helpers ----------------
+  let _uid = 0;
+  const SUITS = ['♠','♥','♦','♣'];
+  const suitColor = s => (s==='♥'||s==='♦') ? 'red' : 'black';
+  const rankLabel = r => r===11?'J':r===12?'Q':r===13?'K':r===14?'A':String(r);
+  const rankName = r => r===11?'Jack':r===12?'Queen':r===13?'King':r===14?'Ace':String(r);
+  const isVip = r => r>=11;
+
+  function shuffle(arr){
+    for(let i=arr.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [arr[i],arr[j]] = [arr[j],arr[i]];
+    }
+    return arr;
+  }
+
+  function buildDecks(){
+    const personal = [], enemy = [];
+    SUITS.forEach(s=>{
+      for(let r=2;r<=14;r++){
+        const card = {id:_uid++, rank:r, suit:s, isJoker:false};
+        if(r>=2 && r<=4) personal.push(card); else enemy.push(card);
+      }
+    });
+    personal.push({id:_uid++, isJoker:true, rank:null, suit:null});
+    personal.push({id:_uid++, isJoker:true, rank:null, suit:null});
+    shuffle(personal); shuffle(enemy);
+    return {personal, enemy};
+  }
+
+  // ---------------- Game State ----------------
+  let G = null;
+
+  function newGame(){
+    const {personal, enemy} = buildDecks();
+    G = {
+      personalDraw: personal,
+      personalDiscard: [],
+      hand: [],
+      enemyDraw: enemy,
+      row: [null,null,null,null], // index0 = Position1 ... index3 = Position4
+      enemyCapture: [],
+      round: 1,
+      phase: 'setup',
+      mode: null,          // 'capture' | 'sacrifice' | 'concede'
+      captureTarget: null, // row index
+      captureSpend: [],    // array of hand card ids
+      jokerAssign: {},     // cardId -> mimicCardId
+      jokerPending: null,  // cardId awaiting mimic pick
+      sacSelected: [],     // up to 2 hand card ids
+      sacTarget: null,     // row index
+      concedeSelected: null,
+      log: [],
+      over: null, // 'win' | 'lose'
+      overReason: ''
+    };
+    logMsg('sys', 'Operation initialized. Personal deck: 2s, 3s, 4s + 2 Jokers (14 cards). Enemy deck: 5–10 and all face cards/Aces (40 cards).');
+
+    // initial enemy row draw
+    for(let i=0;i<4;i++){
+      G.row[i] = G.enemyDraw.shift() || null;
+    }
+    // strip any face/ace cards from the initial spread
+    for(let i=0;i<4;i++){
+      if(G.row[i] && isVip(G.row[i].rank)){
+        logMsg('sys', `Initial spread: ${cardLabel(G.row[i])} was a combatant — returned to the bottom of the Enemy Draw Deck.`);
+        G.enemyDraw.push(G.row[i]);
+        G.row[i] = null;
+      }
+    }
+    runEnemyPhase();
+  }
+
+  function cardLabel(c){
+    if(c.isJoker) return 'Joker';
+    return `${rankLabel(c.rank)}${c.suit}`;
+  }
+
+  function logMsg(type, text){
+    G.log.push({type, text});
+    if(G.log.length>200) G.log.shift();
+  }
+
+  // ---------------- Phase logic ----------------
+  function runEnemyPhase(){
+    // close gaps toward Position 1 (index 0)
+    const remaining = G.row.filter(c=>c);
+    while(remaining.length<4) remaining.push(null);
+    const movedAny = JSON.stringify(G.row.map(c=>c?c.id:null)) !== JSON.stringify(remaining.map(c=>c?c.id:null));
+    G.row = remaining;
+
+    if(G.enemyDraw.length===0 && G.row.every(c=>c)){
+      // nothing to do
+    }
+    let drewAny = false;
+    for(let i=0;i<4;i++){
+      if(!G.row[i] && G.enemyDraw.length>0){
+        G.row[i] = G.enemyDraw.shift();
+        drewAny = true;
+      }
+    }
+    if(movedAny) logMsg('sys', 'Enemy Phase: the row closes ranks toward Position 1.');
+    if(drewAny) logMsg('sys', 'Enemy Phase: fresh reinforcements drawn into open positions.');
+    if(!movedAny && !drewAny) logMsg('sys', 'Enemy Phase: no changes — the row is already full.');
+    if(G.enemyDraw.length===0 && G.row.some(c=>!c)) {
+      logMsg('warn', 'Enemy Draw Deck is empty — remaining open positions stay empty.');
+    }
+    checkWin();
+    if(!G.over){
+      if(G.hand.length===0){
+        // Nothing in hand to discard (this is always true at the very start
+        // of a fresh game) — go straight to drawing instead of making the
+        // player click through an empty "Confirm Discard" step.
+        G.phase = 'draw';
+        render();
+        runDrawPhase();
+        return;
+      }
+      G.phase = 'discard';
+    }
+    render();
+  }
+
+  function confirmDiscard(discardIds){
+    if(discardIds.length){
+      discardIds.forEach(id=>{
+        const idx = G.hand.findIndex(c=>c.id===id);
+        if(idx>=0){
+          G.personalDiscard.push(G.hand[idx]);
+          G.hand.splice(idx,1);
+        }
+      });
+      logMsg('sys', `Discarded ${discardIds.length} card(s) from hand.`);
+    } else {
+      logMsg('sys', 'No cards discarded.');
+    }
+    G.phase = 'draw';
+    render();
+    runDrawPhase();
+  }
+
+  function runDrawPhase(){
+    let drawnCount = 0;
+    let reshuffled = false;
+    while(G.hand.length<4){
+      if(G.personalDraw.length===0){
+        if(G.personalDiscard.length===0) break;
+        G.personalDraw = shuffle(G.personalDiscard);
+        G.personalDiscard = [];
+        reshuffled = true;
+      }
+      G.hand.push(G.personalDraw.shift());
+      drawnCount++;
+    }
+    if(reshuffled) logMsg('warn', 'Personal Draw Deck was empty — discard pile reshuffled into a new draw deck.');
+    logMsg('sys', `Draw Phase: drew ${drawnCount} card(s). Hand size: ${G.hand.length}.`);
+    G.phase = 'capture';
+    resetToCaptureDefault();
+    checkHopelessHand();
+    render();
+  }
+
+  function resetActionSelections(){
+    G.mode = null;
+    G.captureTarget = null;
+    G.captureSpend = [];
+    G.jokerAssign = {};
+    G.jokerPending = null;
+    G.sacSelected = [];
+    G.sacTarget = null;
+    G.concedeSelected = null;
+  }
+
+  // Capture is the default, passive action in the Capture Phase — no button
+  // needed to "enter" it. Sacrifice and Concede are the explicit opt-ins.
+  function resetToCaptureDefault(){
+    resetActionSelections();
+    G.mode = 'capture';
+  }
+
+  function afterCaptureAction(){
+    resetActionSelections();
+    checkLoss();
+    if(G.over){ render(); return; }
+    checkWin();
+    if(G.over){ render(); return; }
+    checkSuitDeadlock();
+    if(G.over){ render(); return; }
+    G.round++;
+    runEnemyPhase();
+  }
+
+  function checkLoss(){
+    if(G.enemyCapture.some(c=>!c.isJoker && isVip(c.rank))){
+      G.over = 'lose';
+      G.overReason = 'An Ace or face card reached the Enemy Capture Pile.';
+      logMsg('warn', 'An Ace or face card has reached the Enemy Capture Pile. Mission failed.');
+    }
+  }
+  function checkWin(){
+    if(G.enemyDraw.length===0 && G.row.every(c=>!c) && !G.over){
+      G.over = 'win';
+      logMsg('good', 'The last enemy combatant is gone and the Enemy Draw Deck is spent. Victory!');
+    }
+  }
+
+  // A suit becomes permanently uncapturable if the value you have left to
+  // spend in it (hand + draw deck + discard, plus what a Joker could add by
+  // doubling your best remaining card) can never reach the cheapest
+  // still-uncaptured enemy card of that suit. That can only happen once
+  // enough of your own cards of that suit have been lost to the Enemy
+  // Capture Pile via Sacrifice or Concede.
+  function checkSuitDeadlock(){
+    if(G.over) return;
+    const suits = ['♠','♥','♦','♣'];
+    const pool = [...G.hand, ...G.personalDraw, ...G.personalDiscard];
+    const jokerCount = pool.filter(c=>c.isJoker).length;
+    for(const suit of suits){
+      const remainingEnemy = [...G.row.filter(c=>c), ...G.enemyDraw].filter(c=>c.suit===suit);
+      if(remainingEnemy.length===0) continue;
+      const minNeeded = Math.min(...remainingEnemy.map(c=>c.rank));
+      const suitCards = pool.filter(c=>!c.isJoker && c.suit===suit);
+      const poolSum = suitCards.reduce((sum,c)=>sum+c.rank,0);
+      const maxCard = suitCards.length ? Math.max(...suitCards.map(c=>c.rank)) : 0;
+      const bestCase = poolSum + jokerCount*maxCard;
+      if(bestCase < minNeeded){
+        G.over = 'lose';
+        G.overReason = `Your remaining ${suit} resources can total at best ${bestCase}, but the cheapest uncaptured ${suit} combatant needs ${minNeeded}. That suit can never be captured again.`;
+        logMsg('warn', `No path to victory: your remaining ${suit} resources can total at best ${bestCase}, but the cheapest uncaptured ${suit} combatant needs ${minNeeded}. That suit can never be captured again.`);
+        return;
+      }
+    }
+  }
+
+  // If a hand is entirely Aces/face cards, can't capture anything currently
+  // in the Enemy Row, and has nothing eligible to Sacrifice, the only move
+  // left is Concede — which is guaranteed to lose. Call it now instead of
+  // making the player go through the motions.
+  function anyValidCaptureExists(){
+    const bySuit = {};
+    G.hand.forEach(c=>{
+      if(c.isJoker) return;
+      (bySuit[c.suit] = bySuit[c.suit] || []).push(c.rank);
+    });
+    for(const suit in bySuit){
+      let sums = new Set([0]);
+      bySuit[suit].forEach(r=>{
+        const next = new Set(sums);
+        sums.forEach(s=>next.add(s+r));
+        sums = next;
+      });
+      sums.delete(0);
+      const rowCardsSameSuit = G.row.filter(c=>c && c.suit===suit);
+      for(const sum of sums){
+        if(rowCardsSameSuit.some(rc=>rc.rank<=sum)) return true;
+      }
+    }
+    return false;
+  }
+  function checkHopelessHand(){
+    if(G.over) return;
+    if(!G.row.some(c=>c)) return; // empty row means the game already ended in a win
+    const allFace = G.hand.length>0 && G.hand.every(c=>!c.isJoker && isVip(c.rank));
+    if(!allFace) return;
+    if(anyValidCaptureExists()) return;
+    G.over = 'lose';
+    G.overReason = 'Your entire hand was Aces and face cards, none could capture anything in the Enemy Row, and nothing was safe to sacrifice.';
+    logMsg('warn', 'Your entire hand is Aces and face cards. None of them can capture anything in the Enemy Row, and you have nothing safe to sacrifice — Conceding would hand the enemy a combatant of your own. There is no way forward.');
+  }
+
+  // ---------------- Capture math ----------------
+  function resolveJoker(card){
+    const mimicId = G.jokerAssign[card.id];
+    if(mimicId==null) return null;
+    const mimic = G.hand.find(c=>c.id===mimicId);
+    if(!mimic) return null;
+    return {rank:mimic.rank, suit:mimic.suit, mimicLabel:cardLabel(mimic)};
+  }
+  function effective(card){
+    if(card.isJoker) return resolveJoker(card);
+    return {rank:card.rank, suit:card.suit};
+  }
+  function spendInfo(){
+    let total=0, suitSet=new Set(), unresolved=false;
+    G.captureSpend.forEach(id=>{
+      const card = G.hand.find(c=>c.id===id);
+      const eff = effective(card);
+      if(!eff){ unresolved=true; return; }
+      total += eff.rank;
+      suitSet.add(eff.suit);
+    });
+    const suit = suitSet.size===1 ? [...suitSet][0] : null;
+    const mixedSuit = suitSet.size>1;
+    return {total, suit, mixedSuit, unresolved};
+  }
+
+  // A joker in the spend selection automatically doubles the one other selected
+  // card. It only needs to ask which card to mimic when there's more than one
+  // other selected card to choose from.
+  function autoResolveJokers(){
+    const nonJokerIds = G.captureSpend.filter(id=>{
+      const c = G.hand.find(x=>x.id===id);
+      return c && !c.isJoker;
+    });
+    const jokerIds = G.captureSpend.filter(id=>{
+      const c = G.hand.find(x=>x.id===id);
+      return c && c.isJoker;
+    });
+    G.jokerPending = null;
+    if(nonJokerIds.length===1){
+      jokerIds.forEach(jid=>{ G.jokerAssign[jid] = nonJokerIds[0]; });
+      return;
+    }
+    if(nonJokerIds.length===0){
+      jokerIds.forEach(jid=>{ delete G.jokerAssign[jid]; });
+      return;
+    }
+    // 2+ other selected cards: any joker without a valid assignment among
+    // them needs an explicit choice.
+    for(const jid of jokerIds){
+      const assigned = G.jokerAssign[jid];
+      if(assigned==null || !nonJokerIds.includes(assigned)){
+        G.jokerPending = jid;
+        break;
+      }
+    }
+  }
+
+  // ---------------- Actions ----------------
+  function doCapture(){
+    const info = spendInfo();
+    const target = G.row[G.captureTarget];
+    if(!target) return;
+    if(info.unresolved || info.mixedSuit || info.suit!==target.suit || info.total < target.rank || G.captureSpend.length===0) return;
+
+    const spentCards = G.captureSpend.map(id=>G.hand.find(c=>c.id===id));
+    const spentLabel = spentCards.map(c=>{
+      if(c.isJoker){ const e = resolveJoker(c); return `Joker(as ${e.mimicLabel})`; }
+      return cardLabel(c);
+    }).join(' + ');
+
+    // remove spent cards from hand -> personal discard
+    G.captureSpend.forEach(id=>{
+      const idx = G.hand.findIndex(c=>c.id===id);
+      G.personalDiscard.push(G.hand[idx]);
+      G.hand.splice(idx,1);
+    });
+    // remove target from row -> personal discard
+    G.personalDiscard.push(target);
+    G.row[G.captureTarget] = null;
+
+    logMsg('good', `Captured ${cardLabel(target)} (Position ${G.captureTarget+1}) spending ${spentLabel} = ${info.total} ${info.suit}.`);
+    afterCaptureAction();
+  }
+
+  function doConcede(){
+    const posOneCard = G.row[0];
+    const handCard = G.hand.find(c=>c.id===G.concedeSelected);
+    if(!posOneCard || !handCard) return;
+    const doExecute = () => {
+      G.enemyCapture.push(posOneCard);
+      G.enemyCapture.push(handCard);
+      G.hand = G.hand.filter(c=>c.id!==handCard.id);
+      G.row[0] = null;
+      logMsg('warn', `Conceded: ${cardLabel(posOneCard)} and your ${cardLabel(handCard)} sent to the Enemy Capture Pile.`);
+      afterCaptureAction();
+    };
+    if(!handCard.isJoker && isVip(handCard.rank)){
+      if(confirm(`${cardLabel(handCard)} is an Ace/face card. Sending it to the Enemy Capture Pile means IMMEDIATE DEFEAT. Proceed anyway?`)){
+        doExecute();
+      }
+    } else {
+      doExecute();
+    }
+  }
+
+  function doSacrifice(){
+    if(G.sacSelected.length!==2 || G.sacTarget==null) return;
+    const cards = G.sacSelected.map(id=>G.hand.find(c=>c.id===id));
+    if(cards.some(c=>!c.isJoker && isVip(c.rank))) return; // guard, shouldn't happen
+    const target = G.row[G.sacTarget];
+    if(!target) return;
+
+    cards.forEach(c=>{ G.enemyCapture.push(c); });
+    G.hand = G.hand.filter(c=>!G.sacSelected.includes(c.id));
+    G.enemyDraw.push(target);
+    G.row[G.sacTarget] = null;
+
+    logMsg('sys', `Sacrificed ${cards.map(cardLabel).join(' + ')} to send ${cardLabel(target)} (Position ${G.sacTarget+1}) to the bottom of the Enemy Draw Deck.`);
+    afterCaptureAction();
+  }
+
+  // ---------------- Rendering ----------------
+  function cardHTML(card, opts){
+    opts = opts||{};
+    const classes = ['card'];
+    if(card.isJoker){
+      classes.push('joker');
+    } else {
+      classes.push('face');
+      classes.push(suitColor(card.suit));
+      if(isVip(card.rank)) classes.push('vip');
+    }
+    if(opts.extra) classes.push(opts.extra);
+    const dataAttr = `data-id="${card.id}"`;
+    let inner;
+    if(card.isJoker){
+      let tag = '';
+      const mimicId = G.jokerAssign[card.id];
+      if(mimicId!=null){
+        const m = G.hand.find(c=>c.id===mimicId);
+        if(m) tag = `<div class="vip-tag" style="color:var(--rust);">as ${cardLabel(m)}</div>`;
+      }
+      inner = `${tag}<div class="center">JOKER</div>`;
+    } else {
+      inner = `
+        ${isVip(card.rank)?`<div class="vip-tag">${rankName(card.rank)}</div>`:''}
+        <div class="rank">${rankLabel(card.rank)}<div class="suit">${card.suit}</div></div>
+        <div class="center">${card.suit}</div>
+        <div class="rank bottom-row">${rankLabel(card.rank)}<div class="suit">${card.suit}</div></div>
+      `;
+    }
+    return `<div class="${classes.join(' ')}" ${dataAttr} ${opts.onclick?`onclick="${opts.onclick}"`:''}>${inner}</div>`;
+  }
+
+  function emptySlotHTML(label){
+    return `<div class="card empty-slot"><div class="center">${label}</div></div>`;
+  }
+
+  function render(){
+    if(!G) return;
+    document.getElementById('stat-round').textContent = G.round;
+    document.getElementById('stat-remaining').textContent = G.enemyDraw.length + G.row.filter(c=>c).length;
+    document.getElementById('pd-count').textContent = G.personalDraw.length;
+    document.getElementById('disc-count').textContent = G.personalDiscard.length;
+
+    // enemy row: display Position 4,3,2,1 left to right (index 3,2,1,0)
+    let rowHTML = `<div class="stack-wrap"><div class="deck-stack"><div class="card-back">ENEMY<br>DRAW</div><div class="deck-count rust">${G.enemyDraw.length}</div></div><div class="pos-label">Draw Deck</div></div>`;
+    for(let idx=3; idx>=0; idx--){
+      const c = G.row[idx];
+      let extra = '';
+      if(G.mode==='capture' && idx===G.captureTarget) extra='targeted';
+      if(G.mode==='sacrifice' && idx===G.sacTarget) extra='targeted';
+      if(G.mode==='concede' && idx===0) extra='at-risk';
+      let clickable = '';
+      if(c){
+        if(G.mode==='capture') clickable = `onclick="UI.pickCaptureTarget(${idx})"`;
+        else if(G.mode==='sacrifice' && G.sacSelected.length===2) clickable = `onclick="UI.pickSacTarget(${idx})"`;
+      }
+      const selectableClass = clickable ? 'selectable' : '';
+      rowHTML += `<div class="stack-wrap">`;
+      if(c){
+        rowHTML += cardHTML(c, {extra: (extra+' '+selectableClass).trim()});
+        if(clickable){
+          rowHTML = rowHTML.replace(new RegExp(`data-id="${c.id}"`), `data-id="${c.id}" ${clickable}`);
+        }
+      } else {
+        rowHTML += emptySlotHTML('empty');
+      }
+      rowHTML += `<div class="pos-label">Position ${idx+1}</div></div>`;
+    }
+    rowHTML += `<div class="stack-wrap">${
+      G.enemyCapture.length
+        ? `<div class="deck-stack"><div class="danger-pile"><span class="sk">☠</span></div><div class="deck-count rust">${G.enemyCapture.length}</div></div>`
+        : `<div class="danger-pile" style="opacity:.5;"><span class="sk">☠</span></div>`
+    }<div class="pos-label">Capture Pile</div></div>`;
+    document.getElementById('enemy-row-track').innerHTML = rowHTML;
+
+    // hand
+    let handHTML = '';
+    if(G.hand.length===0){
+      handHTML = `<div style="color:var(--muted);font-size:12px;">Empty.</div>`;
+    }
+    // A hand card only responds to clicks when doing so would actually do something —
+    // otherwise it shouldn't look clickable in the first place.
+    const handInteractive = (G.phase==='discard') || (G.phase==='capture');
+    G.hand.forEach(c=>{
+      let extra = handInteractive ? 'selectable hand-card' : 'hand-card';
+      let onclick = `UI.clickHand(${c.id})`;
+      let mimicNote = '';
+
+      if(G.mode==='capture'){
+        if(G.captureSpend.includes(c.id)) extra += ' selected';
+        if(c.isJoker && G.jokerPending===c.id) extra += ' joker-pending';
+        const info = spendInfo();
+        // disable non-joker cards whose suit doesn't match an already-locked suit
+        if(!c.isJoker && info.suit && c.suit!==info.suit && !G.captureSpend.includes(c.id)){
+          extra += ' disabled-choice';
+        }
+        if(c.isJoker){
+          const eff = resolveJoker(c);
+          if(eff) mimicNote = `<div class="mimic-tag">acts as ${eff.mimicLabel}</div>`;
+        }
+      } else if(G.mode==='sacrifice'){
+        if(G.sacSelected.includes(c.id)) extra += ' selected';
+        if(!c.isJoker && isVip(c.rank)) extra += ' disabled-choice';
+        if(!G.sacSelected.includes(c.id) && G.sacSelected.length>=2) extra += ' disabled-choice';
+      } else if(G.mode==='concede'){
+        if(G.concedeSelected===c.id) extra += ' selected';
+      }
+
+      handHTML += `<div class="hand-slot">${cardHTML(c,{extra})}${mimicNote}</div>`;
+      if(handInteractive){
+        handHTML = handHTML.replace(new RegExp(`data-id="${c.id}"(?! onclick)`), `data-id="${c.id}" onclick="${onclick}"`);
+      }
+    });
+    document.getElementById('hand-track').innerHTML = handHTML;
+
+    renderPhasePanel();
+    renderLog();
+
+    if(G.over){
+      showOverlay(G.over);
+    }
+  }
+
+  function renderLog(){
+    const el = document.getElementById('log');
+    el.innerHTML = G.log.slice().reverse().map(e=>`<div class="entry ${e.type}"><span class="tag">▸</span>${e.text}</div>`).join('');
+  }
+
+  function renderPhasePanel(){
+    const pill = document.getElementById('phase-pill');
+    const instr = document.getElementById('instructions');
+    const actions = document.getElementById('action-buttons');
+    const readout = document.getElementById('spend-readout');
+    const jpicker = document.getElementById('joker-picker');
+    jpicker.classList.remove('show');
+    readout.style.display = 'none';
+    actions.innerHTML = '';
+
+    if(G.phase==='discard'){
+      pill.textContent = 'Discard Phase';
+      instr.textContent = 'Tap any hand cards you want to discard, then confirm. You may discard none.';
+      actions.innerHTML = `
+        <button class="act primary" onclick="UI.confirmDiscardClick()">Confirm Discard</button>
+      `;
+      // clicking hand cards toggles a local discard set — handled via UI.discardSet
+      return;
+    }
+    if(G.phase==='draw'){
+      pill.textContent = 'Draw Phase';
+      instr.textContent = 'Drawing back up to four cards…';
+      return;
+    }
+    if(G.phase==='capture'){
+      pill.textContent = 'Capture Phase';
+      if(G.mode==='capture'){
+        const target = G.captureTarget!=null ? G.row[G.captureTarget] : null;
+        const info = spendInfo();
+
+        if(!target){
+          instr.textContent = G.captureSpend.length>0
+            ? 'Now tap the enemy card you want to capture with these cards — or sacrifice/concede instead.'
+            : 'Tap an enemy card and/or hand cards to build a capture — either order works. Or sacrifice/concede instead.';
+        } else {
+          instr.textContent = `Targeting ${cardLabel(target)} (value ${target.rank}). Select same-suit ${target.suit} cards from your hand — total must reach ${target.rank}.`;
+        }
+
+        let btns = '';
+        let canConfirm = false;
+        if(target){
+          const okSuit = info.suit===target.suit;
+          const okTotal = info.total>=target.rank;
+          canConfirm = G.captureSpend.length>0 && !info.mixedSuit && !info.unresolved && okSuit && okTotal;
+          readout.style.display='block';
+          readout.innerHTML = `
+            Spend: <b>${info.total}</b> ${info.suit||'—'} ${info.mixedSuit?'<span class="bad">(mixed suits not allowed)</span>':''}
+            ${info.unresolved?'<span class="bad">(assign the joker first)</span>':''}
+            <br>Need: <b>${target.rank} ${target.suit}</b>
+            ${G.captureSpend.length>0 ? (okSuit&&okTotal?'<span class="ok"> ✓ ready</span>':'<span class="bad"> ✗ not enough / wrong suit</span>') : ''}
+          `;
+          btns += `<button class="act primary" onclick="UI.confirmCapture()" ${canConfirm?'':'disabled'}>Confirm Capture</button>`;
+        } else if(G.captureSpend.length>0){
+          readout.style.display='block';
+          readout.innerHTML = `
+            Spend so far: <b>${info.total}</b> ${info.suit||'—'}
+            ${info.mixedSuit?'<span class="bad">(mixed suits not allowed)</span>':''}
+            ${info.unresolved?'<span class="bad">(select a card for the Joker to double)</span>':''}
+          `;
+        }
+        if(G.captureTarget!=null || G.captureSpend.length>0){
+          btns += `<button class="act cancel" onclick="UI.clearCaptureSelection()">Clear Selection</button>`;
+        }
+        btns += `<button class="act" onclick="UI.setMode('sacrifice')" ${G.hand.length<2?'disabled':''}>Sacrifice Two Cards</button>`;
+        btns += `<button class="act danger" onclick="UI.setMode('concede')" ${!G.row[0]||G.hand.length<1?'disabled':''}>Concede to Position 1</button>`;
+        actions.innerHTML = btns;
+
+        if(G.jokerPending!=null){
+          const jcard = G.hand.find(c=>c.id===G.jokerPending);
+          const options = G.captureSpend
+            .map(id=>G.hand.find(c=>c.id===id))
+            .filter(c=>c && !c.isJoker);
+          jpicker.classList.add('show');
+          jpicker.innerHTML = `<div class="jp-title">Which selected card does the Joker double?</div>` +
+            options.map(o=>`<button class="jp-opt" onclick="UI.assignJoker(${jcard.id},${o.id})">${cardLabel(o)}</button>`).join('');
+        }
+      } else if(G.mode==='sacrifice'){
+        if(G.sacSelected.length<2){
+          instr.textContent = `Select ${2-G.sacSelected.length} more hand card(s) to sacrifice (Aces/face cards can't be chosen).`;
+          actions.innerHTML = `<button class="act cancel" onclick="UI.cancelMode()">Back to Capture</button>`;
+        } else if(G.sacTarget==null){
+          instr.textContent = 'Now select which enemy row card gets sent to the bottom of the Enemy Draw Deck.';
+          actions.innerHTML = `<button class="act cancel" onclick="UI.cancelMode()">Back to Capture</button>`;
+        } else {
+          instr.textContent = 'Ready to sacrifice.';
+          actions.innerHTML = `
+            <button class="act primary" onclick="UI.confirmSacrifice()">Confirm Sacrifice</button>
+            <button class="act cancel" onclick="UI.cancelMode()">Back to Capture</button>
+          `;
+        }
+      } else if(G.mode==='concede'){
+        instr.textContent = `Position 1's ${cardLabel(G.row[0])} will capture. Choose one hand card to send with it to the Enemy Capture Pile.`;
+        actions.innerHTML = `
+          <button class="act danger" onclick="UI.confirmConcede()" ${G.concedeSelected==null?'disabled':''}>Confirm Concession</button>
+          <button class="act cancel" onclick="UI.cancelMode()">Back to Capture</button>
+        `;
+      }
+      return;
+    }
+  }
+
+  // ---------------- discard phase local selection ----------------
+  let discardSet = new Set();
+
+  // ---------------- UI event bridge ----------------
+  const UI = {
+    clickHand(id){
+      if(G.phase==='discard'){
+        if(discardSet.has(id)) discardSet.delete(id); else discardSet.add(id);
+        // re-render hand with discard highlighting
+        renderDiscardHighlights();
+        return;
+      }
+      if(G.phase!=='capture') return;
+      const card = G.hand.find(c=>c.id===id);
+      if(!card) return;
+
+      if(G.mode==='capture'){
+        if(card.isJoker){
+          if(G.captureSpend.includes(id)){
+            G.captureSpend = G.captureSpend.filter(x=>x!==id);
+            delete G.jokerAssign[id];
+          } else {
+            G.captureSpend.push(id);
+          }
+        } else {
+          const info = spendInfo();
+          if(G.captureSpend.includes(id)){
+            G.captureSpend = G.captureSpend.filter(x=>x!==id);
+          } else {
+            if(info.suit && card.suit!==info.suit) return; // blocked: mixed suits
+            G.captureSpend.push(id);
+          }
+        }
+        autoResolveJokers();
+        render();
+      } else if(G.mode==='sacrifice'){
+        if(!card.isJoker && isVip(card.rank)) return;
+        if(G.sacSelected.includes(id)){
+          G.sacSelected = G.sacSelected.filter(x=>x!==id);
+          G.sacTarget = null;
+        } else if(G.sacSelected.length<2){
+          G.sacSelected.push(id);
+        }
+        render();
+      } else if(G.mode==='concede'){
+        G.concedeSelected = id;
+        render();
+      }
+    },
+
+    assignJoker(jokerId, mimicId){
+      G.jokerAssign[jokerId] = mimicId;
+      if(!G.captureSpend.includes(jokerId)) G.captureSpend.push(jokerId);
+      autoResolveJokers();
+      render();
+    },
+    cancelJokerPick(){ G.jokerPending = null; render(); },
+
+    pickCaptureTarget(idx){
+      G.captureTarget = idx;
+      render();
+    },
+    pickSacTarget(idx){
+      G.sacTarget = idx;
+      render();
+    },
+
+    setMode(mode){
+      resetActionSelections();
+      G.mode = mode;
+      render();
+    },
+    cancelMode(){
+      resetToCaptureDefault();
+      render();
+    },
+    clearCaptureSelection(){
+      G.captureTarget = null;
+      G.captureSpend = [];
+      G.jokerAssign = {};
+      G.jokerPending = null;
+      render();
+    },
+
+    confirmCapture(){ doCapture(); },
+    confirmSacrifice(){ doSacrifice(); },
+    confirmConcede(){ doConcede(); },
+
+    confirmDiscardClick(){
+      const ids = [...discardSet];
+      discardSet = new Set();
+      confirmDiscard(ids);
+    },
+
+    restart(){
+      discardSet = new Set();
+      newGame();
+    }
+  };
+  window.UI = UI;
+
+  function renderDiscardHighlights(){
+    document.querySelectorAll('#hand-track .card').forEach(el=>{
+      const id = parseInt(el.getAttribute('data-id'),10);
+      el.classList.toggle('selected', discardSet.has(id));
+    });
+  }
+
+  function showOverlay(result){
+    const overlay = document.getElementById('overlay');
+    const modal = document.getElementById('modal');
+    overlay.classList.remove('hidden');
+    if(result==='win'){
+      modal.className = 'card-modal';
+      modal.innerHTML = `<h2>Victory</h2><p>Every enemy combatant has been captured and the field is clear. Well fought.</p><button onclick="UI.restart(); document.getElementById('overlay').classList.add('hidden');">Play Again</button>`;
+    } else {
+      modal.className = 'card-modal lose';
+      const reason = G.overReason || 'An Ace or face card reached the Enemy Capture Pile.';
+      modal.innerHTML = `<h2>Mission Failed</h2><p>${reason}</p><button onclick="UI.restart(); document.getElementById('overlay').classList.add('hidden');">Try Again</button>`;
+    }
+  }
+
+  document.getElementById('btn-start').addEventListener('click', ()=>{
+    document.getElementById('overlay').classList.add('hidden');
+    newGame();
+  });
+  document.getElementById('btn-restart').addEventListener('click', ()=>{
+    if(confirm('Start a new game? Current progress will be lost.')){
+      newGame();
+    }
+  });
+
+})();
+</script>
+
+<script>
+  (function(){
+    var btn = document.getElementById('tbBack');
+    var embedded = window.self !== window.top;
+    btn.style.display = 'inline-flex';
+    btn.addEventListener('click', function(){
+      if (embedded) {
+        try { window.parent.postMessage({ type: 'backToMenu' }, '*'); } catch (e) {}
+      } else {
+        window.location.href = 'index.html';
+      }
+    });
+  })();
+
+  (function(){
+    var rulesBtn = document.getElementById('tbRules');
+    var rulesOverlay = document.getElementById('rulesOverlay');
+    var rulesClose = document.getElementById('rulesClose');
+    function open(){ rulesOverlay.classList.remove('hidden'); }
+    function close(){ rulesOverlay.classList.add('hidden'); }
+    rulesBtn.addEventListener('click', open);
+    rulesClose.addEventListener('click', close);
+    rulesOverlay.addEventListener('click', function(e){
+      if (e.target === rulesOverlay) close();
+    });
+  })();
+</script>
+</body>
+</html>
