@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE BOGEY // SOLO ENGINE</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+  :root{
+    /* shared theme variables, matching the other apps in the suite */
+    --bg:#050402;
+    --panel:#0c0906;
+    --panel-2:#100c08;
+    --amber:#ffb300;
+    --amber-dim:#8a5f00;
+    --amber-glow: rgba(255,179,0,0.55);
+    --red-dim:#7a2b24;
+    --white:#e9e3d2;
+    --ok:#8fffa0;
+    --font-d:'VT323', monospace;
+    --font-b:'Share Tech Mono','Courier New', monospace;
+
+    /* Bogey's original variable names, remapped to the amber palette */
+    --ink:#050402;
+    --felt:#0c0906;
+    --felt-light:#171006;
+    --felt-edge:#050402;
+    --parchment:#050302;
+    --parchment-dim:#0a0704;
+    --brass:#ffb300;
+    --brass-dim:#8a5f00;
+    --moss:#8a5f00;
+    --bogey:#8fffa0;
+    --bogey-dim:#5fae6c;
+    --red:#ff5a4d;
+    --black:#ffb300;
+    --danger:#ff5a4d;
+    --shadow: 0 0 14px rgba(255,179,0,0.22), 0 4px 12px rgba(0,0,0,0.55);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;}
+  body{
+    background:
+      radial-gradient(ellipse at top, #0a0704 0%, var(--ink) 70%);
+    color:var(--white);
+    font-family:var(--font-b);
+    height:100vh;
+    height:100dvh;
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+    overscroll-behavior:none;
+    padding-top:env(safe-area-inset-top);
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}
+  }
+
+  h1,h2,h3,.display{
+    font-family:var(--font-d);
+    letter-spacing:0.04em;
+    font-weight:400;
+  }
+  .mono{font-family:var(--font-b);}
+
+  /* ---------- Topbar ---------- */
+  .topbar{
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    padding:14px 22px;
+    background:linear-gradient(180deg, #050402, #0c0906);
+    border-bottom:1px solid var(--brass-dim);
+    flex-wrap:wrap;
+  }
+  .brand{display:flex; align-items:baseline; gap:10px;}
+  .brand h1{
+    font-family:'Press Start 2P', var(--font-d);
+    font-size:1rem;
+    color:var(--brass);
+    margin:0;
+    text-transform:uppercase;
+    text-shadow:2px 2px 0 #7a4600, 0 0 10px var(--amber-glow), 0 0 22px var(--amber-glow);
+  }
+  .brand span.tag{color:var(--moss); font-size:0.72rem; font-family:var(--font-b); letter-spacing:0.05em; text-transform:uppercase; opacity:0.85;}
+  .stats{
+    display:flex; gap:18px; align-items:center; flex-wrap:wrap;
+    font-family:var(--font-b); font-size:0.82rem; color:var(--white);
+  }
+  .stat{display:flex; flex-direction:column; align-items:center; min-width:64px;}
+  .stat b{color:var(--brass); font-size:1.05rem;}
+  .stat.over b{color:var(--danger);}
+  .topbtns{display:flex; gap:8px;}
+  button{
+    font-family:var(--font-b);
+    font-size:0.85rem;
+    background:transparent;
+    color:var(--amber);
+    border:1px solid var(--brass-dim);
+    border-radius:4px;
+    padding:7px 14px;
+    cursor:pointer;
+    transition:transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+  }
+  button:hover:not(:disabled){background:rgba(255,179,0,0.12); border-color:var(--brass);}
+  button:active:not(:disabled){transform:scale(0.97);}
+  button:disabled{opacity:0.35; cursor:default;}
+  button:focus-visible, .clickable:focus-visible{outline:2px solid var(--bogey); outline-offset:2px;}
+  button.primary{background:var(--brass-dim); border-color:var(--brass); color:#000000; font-weight:600;}
+  button.primary:hover:not(:disabled){background:var(--brass);}
+
+  /* ---------- Table ---------- */
+  .table{
+    flex:1;
+    min-height:0;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    background:
+      radial-gradient(ellipse at 50% 0%, var(--felt-light) 0%, var(--felt) 55%, var(--felt-edge) 100%);
+    border-top:2px solid var(--felt-edge);
+    padding:22px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  #status{
+    text-align:center;
+    font-style:italic;
+    color:var(--moss);
+    min-height:1.3em;
+    font-size:0.95rem;
+  }
+  #status.warn{color:var(--danger); font-style:normal;}
+
+  .board{
+    flex:1;
+    display:flex;
+    flex-wrap:wrap;
+    gap:22px 18px;
+    align-content:flex-start;
+    justify-content:flex-start;
+    padding:6px 4px 20px;
+  }
+  .column{
+    display:flex;
+    flex-direction:column;
+    width:76px;
+  }
+  .column-label{
+    font-family:var(--font-b);
+    font-size:0.68rem;
+    color:var(--moss);
+    text-align:center;
+    margin-bottom:6px;
+    opacity:0.8;
+  }
+
+  /* ---------- Cards ---------- */
+  .card{
+    width:76px;
+    height:104px;
+    border-radius:7px;
+    background:linear-gradient(160deg, var(--parchment), var(--parchment-dim));
+    border:1px solid var(--brass-dim);
+    box-shadow:var(--shadow);
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--black);
+    flex-shrink:0;
+    transition:transform 0.16s ease, box-shadow 0.16s ease, margin-top 0.16s ease;
+  }
+  .card.red{color:var(--red);}
+  .card .corner{
+    position:absolute;
+    font-family:var(--font-b);
+    font-size:0.72rem;
+    line-height:1;
+    font-weight:500;
+  }
+  .card .corner.tl{top:6px; left:7px;}
+  .card .corner.br{bottom:6px; right:7px; transform:rotate(180deg);}
+  .card .pip{font-size:1.9rem; font-family:var(--font-d);}
+  .card.back{
+    background:
+      repeating-linear-gradient(135deg, var(--felt-light) 0 6px, var(--felt) 6px 12px);
+    border:1px solid var(--brass-dim);
+  }
+
+  .column .card{margin-top:-72px;}
+  .column .card:first-child{margin-top:0;}
+  .column .card:last-child{border-color:var(--brass); box-shadow:0 0 0 2px rgba(255,179,0,0.35), var(--shadow);}
+
+  .clickable{cursor:pointer;}
+  .clickable:hover{transform:translateY(-4px);}
+  .legal-target{box-shadow:0 0 0 3px var(--bogey), var(--shadow) !important;}
+  .legal-target:hover{transform:translateY(-6px) scale(1.03);}
+  .illegal-target{opacity:0.4; filter:grayscale(0.3);}
+
+  .ghost-column{
+    width:76px;
+    height:104px;
+    border:2px dashed var(--brass-dim);
+    border-radius:7px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:1.6rem;
+    color:var(--brass-dim);
+    margin-top:20px;
+    transition:transform 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+  }
+  .ghost-column.active{border-color:var(--bogey); color:var(--bogey); cursor:pointer;}
+  .ghost-column.active:hover{transform:translateY(-4px); box-shadow:0 0 0 3px rgba(143,255,160,0.35);}
+  .ghost-column.hidden{visibility:hidden;}
+
+  .selected{transform:translateY(-14px); box-shadow:0 0 0 3px var(--bogey), var(--shadow);}
+
+  /* ---------- Control deck ---------- */
+  .control-deck{
+    flex-shrink:0;
+    background:linear-gradient(0deg, #0c0906, #100c08);
+    border-top:1px solid var(--brass-dim);
+    padding:16px 22px 20px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  .piles-row{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:48px;
+  }
+  .pile-block{display:flex; flex-direction:column; align-items:center; gap:6px;}
+  .pile-block .label{font-family:var(--font-b); font-size:0.68rem; color:var(--moss); text-transform:uppercase; letter-spacing:0.06em;}
+  .pile-stack{position:relative; width:76px; height:104px;}
+  .pile-stack .card{position:absolute; top:0; left:0;}
+  .pile-count{
+    position:absolute; bottom:-20px; left:50%; transform:translateX(-50%);
+    font-family:var(--font-b); font-size:0.72rem; color:var(--white);
+  }
+
+  .bogey-zone{
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+    width:110px;
+  }
+  .bogey-icon{
+    width:56px; height:56px;
+    display:flex; align-items:center; justify-content:center;
+    opacity:0.55;
+    transition:opacity 0.2s ease, transform 0.2s ease;
+  }
+  .bogey-zone.active .bogey-icon{opacity:1; animation:stir 1.6s ease-in-out infinite;}
+  @keyframes stir{
+    0%,100%{transform:rotate(-4deg) scale(1);}
+    50%{transform:rotate(4deg) scale(1.06);}
+  }
+  .bogey-card-slot{width:76px; height:104px; display:flex; align-items:center; justify-content:center;}
+  .bogey-card-slot .card{box-shadow:0 0 14px 2px rgba(143,255,160,0.55), var(--shadow); border-color:var(--bogey);}
+
+  .hand-row{
+    display:flex;
+    justify-content:center;
+    align-items:flex-end;
+    gap:-8px;
+    min-height:118px;
+    flex-wrap:wrap;
+  }
+  .hand-row .card{margin-left:-14px;}
+  .hand-row .card:first-child{margin-left:0;}
+
+  .actions-row{
+    display:flex;
+    justify-content:center;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+
+  /* ---------- Modals ---------- */
+  .modal-overlay{
+    position:fixed; inset:0;
+    background:rgba(0,0,0,0.85);
+    display:flex; align-items:center; justify-content:center;
+    z-index:50;
+    padding:20px;
+  }
+  .modal-overlay.hidden{display:none;}
+  .modal{
+    background:linear-gradient(160deg, #100c08, #050402);
+    border:1px solid var(--brass-dim);
+    border-radius:10px;
+    max-width:460px;
+    width:100%;
+    max-height:calc(100vh - 40px);
+    max-height:calc(100dvh - 40px);
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    padding:28px 26px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.6);
+  }
+  .modal h2{color:var(--brass); font-size:1.5rem; margin:0 0 6px;}
+  .modal p{color:var(--moss); font-size:0.92rem; line-height:1.55;}
+  .modal .rules-list{margin:14px 0; padding-left:0; list-style:none;}
+  .modal .rules-list li{
+    font-size:0.87rem; color:var(--moss); line-height:1.5;
+    padding-left:1.3em; text-indent:-1.3em; margin-bottom:8px;
+  }
+  .modal .rules-list li::before{content:"◆ "; color:var(--brass); font-size:0.7em;}
+  .field{margin:16px 0;}
+  .field label{display:block; font-family:var(--font-b); font-size:0.72rem; color:var(--moss); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;}
+  .choice-group{display:flex; gap:8px; flex-wrap:wrap;}
+  .choice-group button{flex:1; min-width:80px;}
+  .choice-group button.selected-choice{background:var(--brass-dim); border-color:var(--brass); color:#000000; font-weight:600;}
+  .modal .actions-row{justify-content:flex-end; margin-top:20px;}
+
+  .end-modal .result{font-size:1.1rem; color:var(--bogey); margin-bottom:4px;}
+  .end-modal.loss .result{color:var(--danger);}
+
+  footer.credit{
+    flex-shrink:0;
+    text-align:center; padding:8px; font-size:0.68rem; color:var(--brass-dim);
+    font-family:var(--font-b); background:#0c0906;
+  }
+
+  @media (max-width:640px){
+    .topbar{ padding:8px 12px; gap:8px; }
+    .brand h1{ font-size:0.8rem; }
+    .brand span.tag{ display:none; }
+    .stats{ gap:10px; font-size:0.7rem; }
+    .stat{ min-width:48px; }
+    .stat b{ font-size:0.9rem; }
+    .topbtns button{ padding:5px 10px; font-size:0.75rem; }
+
+    .table{ padding:12px; gap:10px; }
+    .board{ justify-content:center; gap:16px 10px; }
+    .column, .card, .ghost-column, .pile-stack, .bogey-card-slot{ width:54px; }
+    .card, .ghost-column, .pile-stack, .bogey-card-slot{ height:74px; }
+    .column .card{ margin-top:-48px; }
+    .card .pip{ font-size:1.3rem; }
+    .card .corner{ font-size:0.6rem; }
+    .ghost-column{ font-size:1.2rem; }
+
+    .control-deck{ padding:10px 12px 12px; gap:10px; }
+    .piles-row{ gap:20px; }
+    .hand-row .card{ margin-left:-12px; }
+    .actions-row{ gap:8px; }
+    .actions-row button{ font-size:0.78rem; padding:7px 10px; }
+
+    footer.credit{ padding:4px; font-size:0.6rem; }
+  }
+
+  @media (max-height:640px){
+    footer.credit{ display:none; }
+  }
+
+  /* ---------- CRT overlay + terminal chrome (matches the other apps) ---------- */
+  .crt::before{
+    content:"";
+    position:fixed; inset:0;
+    background:repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 1px,
+      rgba(0,0,0,0.18) 2px,
+      rgba(0,0,0,0.18) 3px
+    );
+    pointer-events:none;
+    z-index:500;
+    mix-blend-mode:multiply;
+    animation:flicker 6s infinite;
+  }
+  .crt::after{
+    content:"";
+    position:fixed; inset:0;
+    background:radial-gradient(ellipse at center, rgba(0,0,0,0) 60%, rgba(0,0,0,0.55) 100%);
+    pointer-events:none;
+    z-index:501;
+  }
+  @keyframes flicker{
+    0%,100%{opacity:1;}
+    92%{opacity:1;}
+    93%{opacity:0.85;}
+    94%{opacity:1;}
+  }
+
+  .terminal{
+    width:100%;
+    max-width:900px;
+    margin:0 auto;
+    border:1px solid var(--amber-dim);
+    box-shadow:0 0 40px rgba(255,179,0,0.08), inset 0 0 60px rgba(0,0,0,0.6);
+    display:flex;
+    flex-direction:column;
+    height:100%;
+    overflow:hidden;
+  }
+  .titlebar{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:8px 14px;
+    background:linear-gradient(180deg, #171006, #0c0805);
+    border-bottom:1px solid var(--amber-dim);
+    font-family:var(--font-d);
+    font-size:20px;
+    letter-spacing:2px;
+    color:var(--amber);
+    flex-shrink:0;
+  }
+  .dots{display:flex;gap:6px;margin-left:auto;flex-shrink:0;}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--amber-dim);}
+  .tb-back{
+    display:none;
+    align-items:center;
+    gap:4px;
+    font-family:var(--font-b);
+    font-size:11px;
+    letter-spacing:1px;
+    background:transparent;
+    border:1px solid var(--amber-dim);
+    color:var(--amber);
+    padding:4px 9px;
+    cursor:pointer;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  .tb-back:hover{ background:var(--amber); color:#000; }
+  .tb-rules{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    font-family:var(--font-b);
+    font-size:11px;
+    letter-spacing:1px;
+    background:transparent;
+    border:1px solid var(--amber-dim);
+    color:var(--amber);
+    padding:4px 9px;
+    cursor:pointer;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  .tb-rules:hover{ background:var(--amber); color:#000; }
+  .titlebar-label{ overflow:hidden; text-overflow:ellipsis; }
+
+  .screen{ flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
+
+  @media (max-width:420px){
+    .titlebar{ font-size:15px; padding:8px 10px; gap:8px; }
+    .tb-back, .tb-rules{ font-size:10px; padding:4px 7px; }
+  }
+
+  /* Readability: bolder text overall */
+  body, button, input, select {
+    font-weight: 700;
+  }
+  body, button, input, select,
+  .stats, .pile-block .label, .pile-count, .column-label, .field label,
+  .card .corner, .card .pip, .modal p, .rules-list li, footer.credit,
+  .titlebar, .brand span.tag {
+    text-shadow: 0.35px 0 0 currentColor, -0.35px 0 0 currentColor;
+  }
+</style>
+</head>
+<body class="crt">
+
+<div class="terminal">
+  <div class="titlebar">
+    <button class="tb-back" id="tbBack" type="button">&larr; MENU</button>
+    <span class="titlebar-label">C:\APPS\BOGEY</span>
+    <button class="tb-rules" id="tbRulesShortcut" type="button">RULES</button>
+    <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+  </div>
+  <div class="screen">
+
+<header class="topbar">
+  <div class="brand">
+    <h1>The Bogey</h1>
+    <span class="tag">a solitaire of tidy piles &amp; mischief</span>
+  </div>
+  <div class="stats">
+    <div class="stat"><b id="statColumns">0</b><span>columns</span></div>
+    <div class="stat"><b id="statTarget">8</b><span>target</span></div>
+    <div class="stat"><b id="statLeft">52</b><span>to place</span></div>
+  </div>
+  <div class="topbtns">
+    <button id="btnRules">Rules</button>
+    <button id="btnNewGame">New Game</button>
+  </div>
+</header>
+
+<main class="table">
+  <div id="status">Setting up the table…</div>
+  <div class="board" id="board"></div>
+</main>
+
+<div class="control-deck">
+  <div class="piles-row">
+    <div class="pile-block">
+      <span class="label">Draw</span>
+      <div class="pile-stack" id="drawPileEl"></div>
+      <span class="pile-count" id="drawCount">0</span>
+    </div>
+
+    <div class="bogey-zone" id="bogeyZone">
+      <span class="label">The Bogey</span>
+      <div class="bogey-icon">
+        <svg viewBox="0 0 40 40" width="44" height="44">
+          <path d="M20 4 C10 4 6 14 6 22 C6 30 12 36 20 36 C28 36 34 30 34 22 C34 14 30 4 20 4 Z" fill="none" stroke="var(--bogey)" stroke-width="2"/>
+          <circle cx="14" cy="20" r="2" fill="var(--bogey)"/>
+          <circle cx="26" cy="20" r="2" fill="var(--bogey)"/>
+          <path d="M12 8 C8 2 4 2 3 6" fill="none" stroke="var(--brass)" stroke-width="2" stroke-linecap="round"/>
+          <path d="M28 8 C32 2 36 2 37 6" fill="none" stroke="var(--brass)" stroke-width="2" stroke-linecap="round"/>
+          <path d="M14 27 Q20 32 26 27" fill="none" stroke="var(--bogey)" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="bogey-card-slot" id="bogeySlot"></div>
+    </div>
+
+    <div class="pile-block">
+      <span class="label">Discard</span>
+      <div class="pile-stack" id="discardPileEl"></div>
+      <span class="pile-count" id="discardCount">0</span>
+    </div>
+  </div>
+
+  <div class="hand-row" id="handRow"></div>
+
+  <div class="actions-row">
+    <button id="btnDiscard" disabled>Discard selected</button>
+    <button id="btnDiscardAllEndTurn">Discard Remaining + End Turn</button>
+    <button id="btnEndTurn" class="primary">End Turn</button>
+  </div>
+</div>
+
+<footer class="credit">based on &ldquo;The Bogey&rdquo; by Katharine Turner — fan implementation</footer>
+
+  </div>
+</div>
+
+<!-- Setup modal -->
+<div class="modal-overlay" id="setupOverlay">
+  <div class="modal">
+    <h2>The Bogey</h2>
+    <p>Play every card in the deck into as few columns as you can. Each column runs one suit, strictly downward in rank (K → A, gaps allowed). At the end of your turn, the Bogey flips a card from the deck — you must place it immediately, wherever it legally fits. Choose badly for too long and you'll run out of room.</p>
+    <div class="field">
+      <label>Hand size</label>
+      <div class="choice-group" id="handSizeGroup">
+        <button data-val="5" class="selected-choice">Normal — 5 cards</button>
+        <button data-val="4">Hard — 4 cards</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Target columns (max 12)</label>
+      <div class="choice-group" id="targetGroup"></div>
+    </div>
+    <div class="actions-row">
+      <button class="primary" id="btnBegin">Begin</button>
+    </div>
+  </div>
+</div>
+
+<!-- Rules panel -->
+<div class="modal-overlay hidden" id="rulesOverlay">
+  <div class="modal">
+    <h2>How to Play</h2>
+    <ul class="rules-list">
+      <li>Each turn you may play any number of cards from your hand onto the table, and/or discard cards you don't want to a discard pile.</li>
+      <li>A card can start a brand-new column, or be added below the current bottom card of an existing column if it's the <em>same suit</em> and a <em>lower rank</em>. Gaps in rank are fine.</li>
+      <li>There is a hard limit of 12 columns on the table.</li>
+      <li>When you end your turn, the Bogey flips the top card of the draw pile and you must place it immediately — legally, wherever you choose. If it fits nowhere, the game is lost.</li>
+      <li>Your hand refills to full afterward. When the draw pile runs dry, the discard pile is shuffled to replace it.</li>
+      <li>You win once every card is on the table — the fewer columns you used, the better. Beat your chosen target to claim victory.</li>
+    </ul>
+    <div class="actions-row"><button class="primary" id="btnCloseRules">Close</button></div>
+  </div>
+</div>
+
+<!-- End of game modal -->
+<div class="modal-overlay hidden" id="endOverlay">
+  <div class="modal end-modal" id="endModal">
+    <div class="result" id="endResult">You win!</div>
+    <h2 id="endHeadline">The table is clear</h2>
+    <p id="endDetail"></p>
+    <div class="actions-row">
+      <button class="primary" id="btnPlayAgain">Play Again</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const RANK_LABELS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+  const SUITS = [
+    {code:'S', symbol:'♠', color:'black'},
+    {code:'H', symbol:'♥', color:'red'},
+    {code:'D', symbol:'♦', color:'red'},
+    {code:'C', symbol:'♣', color:'black'}
+  ];
+
+  let state = null;
+
+  function makeDeck(){
+    const deck = [];
+    for(const s of SUITS){
+      for(let r=1;r<=13;r++){
+        deck.push({rank:r, suit:s.code});
+      }
+    }
+    return deck;
+  }
+
+  function shuffle(arr){
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]] = [a[j],a[i]];
+    }
+    return a;
+  }
+
+  function suitInfo(code){ return SUITS.find(s=>s.code===code); }
+
+  function legal(card, column){
+    if(!column || column.length===0) return true;
+    const bottom = column[column.length-1];
+    return card.suit === bottom.suit && card.rank < bottom.rank;
+  }
+
+  function newGame(handSize, target){
+    const deck = shuffle(makeDeck());
+    const hand = deck.splice(0, handSize);
+    state = {
+      drawPile: deck,
+      discardPile: [],
+      hand: hand,
+      columns: [],
+      bogeyCard: null,
+      handSize: handSize,
+      target: target,
+      selectedHandIndices: new Set(),
+      phase: 'player',
+      gameOver: null,
+      statusMsg: "Your move — play or discard from your hand, then end your turn."
+    };
+    render();
+  }
+
+  function refill(){
+    while(state.hand.length < state.handSize){
+      if(state.drawPile.length === 0){
+        if(state.discardPile.length === 0) break;
+        state.drawPile = shuffle(state.discardPile);
+        state.discardPile = [];
+      }
+      state.hand.push(state.drawPile.pop());
+    }
+    state.phase = 'player';
+    state.selectedHandIndices = new Set();
+    if(state.hand.length===0 && state.drawPile.length===0 && state.discardPile.length===0){
+      finishGame('win');
+      return;
+    }
+    state.statusMsg = "Your move — play or discard from your hand, then end your turn.";
+    render();
+  }
+
+  function bogeySequence(){
+    if(state.drawPile.length === 0){
+      if(state.discardPile.length === 0){
+        refill();
+        return;
+      }
+      state.drawPile = shuffle(state.discardPile);
+      state.discardPile = [];
+    }
+    state.bogeyCard = state.drawPile.pop();
+    state.phase = 'bogey';
+    const canExisting = state.columns.some(col => legal(state.bogeyCard, col));
+    const canNew = state.columns.length < 12;
+    if(!canExisting && !canNew){
+      state.statusMsg = "The Bogey's card has nowhere to go. The table is lost.";
+      render();
+      finishGame('loss');
+      return;
+    }
+    const si = suitInfo(state.bogeyCard.suit);
+    state.statusMsg = `The Bogey plays a ${RANK_LABELS[state.bogeyCard.rank-1]} of ${suitName(si.code)}. Place it.`;
+    render();
+  }
+
+  function suitName(code){
+    return {S:'Spades',H:'Hearts',D:'Diamonds',C:'Clubs'}[code];
+  }
+
+  function finishGame(result){
+    state.phase = 'over';
+    state.gameOver = result;
+    render();
+    showEndModal(result);
+  }
+
+  function selectHandCard(idx){
+    if(state.phase !== 'player') return;
+    if(state.selectedHandIndices.has(idx)){
+      state.selectedHandIndices.delete(idx);
+    } else {
+      state.selectedHandIndices.add(idx);
+    }
+    if(state.selectedHandIndices.size === 1){
+      state.statusMsg = "One card selected — play it to a column, or discard it.";
+    } else if(state.selectedHandIndices.size > 1){
+      state.statusMsg = `${state.selectedHandIndices.size} cards selected — discard them together, or select just one to play it.`;
+    } else {
+      state.statusMsg = "Your move — play or discard from your hand, then end your turn.";
+    }
+    render();
+  }
+
+  function singleSelectedIndex(){
+    return state.selectedHandIndices.size === 1 ? [...state.selectedHandIndices][0] : null;
+  }
+
+  // Finds a column whose bottom card is the same suit and exactly one rank
+  // above the given card (e.g. board has ...,5H and card is 4H). Since each
+  // exact rank+suit only exists once in the deck, at most one column can ever
+  // match a given card this way, so there's no ambiguity to worry about.
+  function findExactMatchColumn(card){
+    for(let i=0;i<state.columns.length;i++){
+      const col = state.columns[i];
+      if(col.length === 0) continue;
+      const bottom = col[col.length-1];
+      if(bottom.suit === card.suit && bottom.rank === card.rank + 1) return i;
+    }
+    return -1;
+  }
+
+  function handleHandClick(idx){
+    if(state.phase !== 'player') return;
+    // Only auto-play when nothing is already selected, so building a
+    // multi-card discard selection still works exactly as before.
+    if(state.selectedHandIndices.size === 0){
+      const card = state.hand[idx];
+      const colIdx = findExactMatchColumn(card);
+      if(colIdx !== -1){
+        state.selectedHandIndices = new Set([idx]);
+        playToColumn(colIdx);
+        return;
+      }
+    }
+    selectHandCard(idx);
+  }
+
+  function playToColumn(colIdx){
+    if(state.phase === 'player'){
+      const idx = singleSelectedIndex();
+      if(idx === null) return;
+      const card = state.hand[idx];
+      if(!legal(card, state.columns[colIdx])) return;
+      state.columns[colIdx].push(card);
+      state.hand.splice(idx, 1);
+      state.selectedHandIndices = new Set();
+      state.statusMsg = "Placed. Keep playing, or end your turn.";
+      render();
+    } else if(state.phase === 'bogey'){
+      const card = state.bogeyCard;
+      if(!legal(card, state.columns[colIdx])) return;
+      state.columns[colIdx].push(card);
+      state.bogeyCard = null;
+      refill();
+    }
+  }
+
+  function playToNewColumn(){
+    if(state.columns.length >= 12) return;
+    if(state.phase === 'player'){
+      const idx = singleSelectedIndex();
+      if(idx === null) return;
+      const card = state.hand[idx];
+      state.columns.push([card]);
+      state.hand.splice(idx, 1);
+      state.selectedHandIndices = new Set();
+      state.statusMsg = "New column started. Keep playing, or end your turn.";
+      render();
+    } else if(state.phase === 'bogey'){
+      state.columns.push([state.bogeyCard]);
+      state.bogeyCard = null;
+      refill();
+    }
+  }
+
+  function discardSelected(){
+    if(state.phase !== 'player' || state.selectedHandIndices.size === 0) return;
+    const indices = [...state.selectedHandIndices].sort((a,b)=>b-a);
+    for(const idx of indices){
+      state.discardPile.push(state.hand[idx]);
+      state.hand.splice(idx, 1);
+    }
+    const count = indices.length;
+    state.selectedHandIndices = new Set();
+    state.statusMsg = count > 1 ? `Discarded ${count} cards. Keep playing, or end your turn.` : "Discarded. Keep playing, or end your turn.";
+    render();
+  }
+
+  function discardAllAndEndTurn(){
+    if(state.phase !== 'player') return;
+    if(state.hand.length > 0){
+      state.discardPile.push(...state.hand);
+      state.hand = [];
+    }
+    state.selectedHandIndices = new Set();
+    endTurn();
+  }
+
+  function endTurn(){
+    if(state.phase !== 'player') return;
+    state.selectedHandIndices = new Set();
+    state.statusMsg = "The Bogey stirs…";
+    render();
+    setTimeout(bogeySequence, 380);
+  }
+
+  // ---------- Rendering ----------
+  function cardHTML(card, extraClass){
+    const si = suitInfo(card.suit);
+    const label = RANK_LABELS[card.rank-1];
+    return `<div class="card ${si.color} ${extraClass||''}">
+      <span class="corner tl">${label}<br>${si.symbol}</span>
+      <span class="pip">${si.symbol}</span>
+      <span class="corner br">${label}<br>${si.symbol}</span>
+    </div>`;
+  }
+
+  function render(){
+    if(!state) return;
+
+    document.getElementById('statColumns').textContent = state.columns.length;
+    document.getElementById('statTarget').textContent = state.target;
+    const placed = state.columns.reduce((n,c)=>n+c.length,0);
+    document.getElementById('statLeft').textContent = 52 - placed;
+    const colStat = document.getElementById('statColumns').closest('.stat');
+    colStat.classList.toggle('over', state.columns.length > state.target);
+
+    const statusEl = document.getElementById('status');
+    statusEl.textContent = state.statusMsg;
+    statusEl.classList.toggle('warn', state.phase === 'over' && state.gameOver === 'loss');
+
+    // Board / columns
+    const board = document.getElementById('board');
+    let html = '';
+    const singleIdx = singleSelectedIndex();
+    const playableCard = state.phase==='player'
+      ? (singleIdx !== null ? state.hand[singleIdx] : null)
+      : (state.phase==='bogey' ? state.bogeyCard : null);
+
+    state.columns.forEach((col, i) => {
+      let cls = 'column';
+      html += `<div class="${cls}">
+        <div class="column-label">${suitName(col[col.length-1].suit)[0]} · ${col.length}</div>
+        <div class="clickable-wrap" data-col="${i}"></div>
+      </div>`;
+    });
+    board.innerHTML = html;
+
+    // fill column card stacks with click targets
+    state.columns.forEach((col, i) => {
+      const wrap = board.querySelectorAll('.clickable-wrap')[i];
+      let inner = '';
+      col.forEach((card, ci) => {
+        const isBottom = ci === col.length - 1;
+        let extra = '';
+        if(isBottom && playableCard){
+          const isLegalTarget = legal(playableCard, col);
+          extra = isLegalTarget ? 'clickable legal-target' : 'illegal-target';
+        }
+        inner += cardHTML(card, extra);
+      });
+      wrap.innerHTML = inner;
+      const bottomCardEl = wrap.querySelector('.card:last-child');
+      if(bottomCardEl && playableCard && legal(playableCard, col)){
+        bottomCardEl.addEventListener('click', () => playToColumn(i));
+      }
+    });
+
+    // ghost new-column slot
+    const canNew = state.columns.length < 12;
+    const newColActive = canNew && !!playableCard;
+    const ghost = document.createElement('div');
+    ghost.className = 'ghost-column' + (newColActive ? ' active' : (canNew ? '' : ' hidden'));
+    ghost.textContent = '+';
+    if(newColActive) ghost.addEventListener('click', playToNewColumn);
+    board.appendChild(ghost);
+
+    // Draw pile
+    const drawEl = document.getElementById('drawPileEl');
+    drawEl.innerHTML = state.drawPile.length > 0 ? `<div class="card back"></div>` : '';
+    document.getElementById('drawCount').textContent = state.drawPile.length;
+
+    // Discard pile
+    const discardEl = document.getElementById('discardPileEl');
+    discardEl.innerHTML = state.discardPile.length > 0 ? `<div class="card back"></div>` : '';
+    document.getElementById('discardCount').textContent = state.discardPile.length;
+
+    // Bogey zone
+    const bogeyZone = document.getElementById('bogeyZone');
+    bogeyZone.classList.toggle('active', state.phase === 'bogey');
+    const bogeySlot = document.getElementById('bogeySlot');
+    bogeySlot.innerHTML = state.bogeyCard ? cardHTML(state.bogeyCard, '') : '';
+
+    // Hand
+    const handRow = document.getElementById('handRow');
+    handRow.innerHTML = '';
+    state.hand.forEach((card, i) => {
+      const div = document.createElement('div');
+      const selected = state.selectedHandIndices.has(i);
+      div.innerHTML = cardHTML(card, 'clickable' + (selected ? ' selected' : ''));
+      const cardEl = div.firstElementChild;
+      if(state.phase === 'player'){
+        cardEl.addEventListener('click', () => handleHandClick(i));
+      } else {
+        cardEl.classList.remove('clickable');
+      }
+      handRow.appendChild(cardEl);
+    });
+
+    // Buttons
+    const discardBtn = document.getElementById('btnDiscard');
+    discardBtn.disabled = !(state.phase==='player' && state.selectedHandIndices.size > 0);
+    discardBtn.textContent = state.selectedHandIndices.size > 1
+      ? `Discard ${state.selectedHandIndices.size} selected`
+      : 'Discard selected';
+    document.getElementById('btnEndTurn').disabled = state.phase !== 'player';
+    document.getElementById('btnDiscardAllEndTurn').disabled = !(state.phase === 'player' && state.hand.length > 0);
+  }
+
+  function showEndModal(result){
+    const overlay = document.getElementById('endOverlay');
+    const modal = document.getElementById('endModal');
+    const resultEl = document.getElementById('endResult');
+    const headlineEl = document.getElementById('endHeadline');
+    const detailEl = document.getElementById('endDetail');
+    modal.classList.toggle('loss', result==='loss');
+    if(result === 'win'){
+      const won = state.columns.length <= state.target;
+      resultEl.textContent = won ? "You win!" : "Table cleared — but over target";
+      headlineEl.textContent = won ? "Every card found its place" : "Every card placed, just not tidily enough";
+      detailEl.textContent = `You used ${state.columns.length} column${state.columns.length===1?'':'s'} against a target of ${state.target}. ${won ? "The Bogey concedes this round." : "Try again for a tighter table."}`;
+    } else {
+      resultEl.textContent = "The Bogey wins this round";
+      headlineEl.textContent = "No column would take that card";
+      detailEl.textContent = `You reached ${state.columns.length} column${state.columns.length===1?'':'s'} before the table closed up on you.`;
+    }
+    overlay.classList.remove('hidden');
+  }
+
+  // ---------- Setup modal wiring ----------
+  let chosenHandSize = 5;
+  let chosenTarget = 8;
+
+  function buildTargetChoices(){
+    const group = document.getElementById('targetGroup');
+    group.innerHTML = '';
+    for(let t=4; t<=12; t++){
+      const b = document.createElement('button');
+      b.textContent = t;
+      b.dataset.val = t;
+      if(t === chosenTarget) b.classList.add('selected-choice');
+      b.addEventListener('click', () => {
+        chosenTarget = t;
+        group.querySelectorAll('button').forEach(x=>x.classList.remove('selected-choice'));
+        b.classList.add('selected-choice');
+      });
+      group.appendChild(b);
+    }
+  }
+  buildTargetChoices();
+
+  document.getElementById('handSizeGroup').querySelectorAll('button').forEach(b=>{
+    b.addEventListener('click', () => {
+      chosenHandSize = parseInt(b.dataset.val, 10);
+      document.getElementById('handSizeGroup').querySelectorAll('button').forEach(x=>x.classList.remove('selected-choice'));
+      b.classList.add('selected-choice');
+    });
+  });
+
+  document.getElementById('btnBegin').addEventListener('click', () => {
+    document.getElementById('setupOverlay').classList.add('hidden');
+    newGame(chosenHandSize, chosenTarget);
+  });
+
+  document.getElementById('btnNewGame').addEventListener('click', () => {
+    document.getElementById('setupOverlay').classList.remove('hidden');
+  });
+
+  document.getElementById('btnRules').addEventListener('click', () => {
+    document.getElementById('rulesOverlay').classList.remove('hidden');
+  });
+  document.getElementById('btnCloseRules').addEventListener('click', () => {
+    document.getElementById('rulesOverlay').classList.add('hidden');
+  });
+
+  document.getElementById('btnPlayAgain').addEventListener('click', () => {
+    document.getElementById('endOverlay').classList.add('hidden');
+    document.getElementById('setupOverlay').classList.remove('hidden');
+  });
+
+  document.getElementById('btnDiscard').addEventListener('click', discardSelected);
+  document.getElementById('btnDiscardAllEndTurn').addEventListener('click', discardAllAndEndTurn);
+  document.getElementById('btnEndTurn').addEventListener('click', endTurn);
+
+})();
+</script>
+
+<script>
+  (function(){
+    var btn = document.getElementById('tbBack');
+    var embedded = window.self !== window.top;
+    btn.style.display = 'inline-flex';
+    btn.addEventListener('click', function(){
+      if (embedded) {
+        try { window.parent.postMessage({ type: 'backToMenu' }, '*'); } catch (e) {}
+      } else {
+        window.location.href = 'index.html';
+      }
+    });
+  })();
+
+  (function(){
+    // Shortcut in the titlebar opens the same rules panel already wired to #btnRules.
+    var shortcut = document.getElementById('tbRulesShortcut');
+    shortcut.addEventListener('click', function(){
+      document.getElementById('rulesOverlay').classList.remove('hidden');
+    });
+  })();
+</script>
+</body>
+</html>
