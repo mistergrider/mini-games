@@ -106,6 +106,22 @@
     flex-shrink:0;
   }
   .tb-back:hover{ background:var(--amber); color:#000; }
+  .tb-rules{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    font-family:var(--font-b);
+    font-size:11px;
+    letter-spacing:1px;
+    background:transparent;
+    border:1px solid var(--amber-dim);
+    color:var(--amber);
+    padding:4px 9px;
+    cursor:pointer;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  .tb-rules:hover{ background:var(--amber); color:#000; }
   .titlebar-label{ overflow:hidden; text-overflow:ellipsis; }
 
   @media (max-width:420px){
@@ -372,6 +388,62 @@
   }
   .modal p{color:var(--amber-dim);margin:0 0 20px;font-size:14px;font-family:var(--font-b);}
 
+  .overlay.rules{ align-items:flex-start; padding-top:40px; }
+  .overlay.rules .modal{
+    max-width:540px;
+    width:100%;
+    max-height:calc(100vh - 80px);
+    max-height:calc(100dvh - 80px);
+    display:flex;
+    flex-direction:column;
+    text-align:left;
+  }
+  .rules-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:14px;
+    flex-shrink:0;
+  }
+  .rules-header h2{ margin:0; text-align:left; }
+  .rules-close{
+    background:transparent;
+    border:1px solid var(--amber-dim);
+    color:var(--amber);
+    width:32px;height:32px;
+    font-size:16px;
+    line-height:1;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .rules-close:hover{ background:var(--amber); color:#000; }
+  .rules-body{
+    overflow-y:auto;
+    padding-right:8px;
+    scrollbar-width:thin;
+    scrollbar-color: var(--amber-dim) #000;
+  }
+  .rules-body h3{
+    font-family:var(--font-b);
+    font-size:12px;
+    letter-spacing:1.5px;
+    color:var(--amber);
+    text-transform:uppercase;
+    margin:18px 0 6px;
+    border-bottom:1px solid var(--amber-dim);
+    padding-bottom:4px;
+  }
+  .rules-body h3:first-child{ margin-top:0; }
+  .rules-body p{
+    margin:0 0 10px;
+    color:var(--white);
+    font-family:var(--font-b);
+    font-size:12.5px;
+    line-height:1.55;
+  }
+  .rules-body p b{ color:var(--amber); }
+
   @media (max-width:480px){
     .card{width:54px;height:54px;font-size:13px;}
     .weapon-zone-label{width:60px;font-size:12px;}
@@ -396,6 +468,7 @@
   <div class="titlebar">
     <button class="tb-back" id="tbBack" type="button">&larr; MENU</button>
     <span class="titlebar-label">C:\APPS\SCOUNDREL</span>
+    <button class="tb-rules" id="tbRules" type="button">RULES</button>
     <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
   </div>
   <div class="screen">
@@ -454,6 +527,45 @@
     <div class="score" id="modalScore">0</div>
     <p id="modalDesc">The dungeon claims another scoundrel.</p>
     <button class="primary" id="modalRestart">RUN AGAIN</button>
+  </div>
+</div>
+
+<div class="overlay rules hidden" id="rulesOverlay">
+  <div class="modal">
+    <div class="rules-header">
+      <h2>SCOUNDREL — RULES</h2>
+      <button class="rules-close" id="rulesClose" type="button">&times;</button>
+    </div>
+    <div class="rules-body">
+      <h3>The Deck (44 cards)</h3>
+      <p><b>♣ Clubs &amp; ♠ Spades</b> (2–10, J, Q, K, A) are <b>MONSTERS</b>. Face values: J=11, Q=12, K=13, A=14.</p>
+      <p><b>♦ Diamonds</b> (2–10) are <b>WEAPONS</b>. <b>♥ Hearts</b> (2–10) are <b>POTIONS</b>.</p>
+
+      <h3>Goal</h3>
+      <p>Clear the entire dungeon deck without your HP dropping to 0. You start at 20/20 HP.</p>
+
+      <h3>The Room</h3>
+      <p>Each room is 4 face-up cards. On your turn you must resolve 3 of the 4, in any order you like. The 1 card left over carries forward and joins 3 freshly drawn cards to form the next room. Once the deck runs dry, you must resolve everything that's left.</p>
+
+      <h3>Fighting a Monster</h3>
+      <p>Fight it <b>barehanded</b> — lose HP equal to its full value — or fight it with your equipped weapon — lose HP equal to (monster value − weapon value), minimum 0.</p>
+      <p>Using a weapon stacks that monster underneath it. After that, the weapon can only be used again on a monster of <b>equal or lesser value</b> than the last one it defeated — it dulls with use.</p>
+
+      <h3>Equipping a Weapon</h3>
+      <p>Equip it immediately. Any previously equipped weapon — and every monster stacked beneath it — is discarded.</p>
+
+      <h3>Drinking a Potion</h3>
+      <p>Heal HP equal to its value, capped at your 20 max. Only the <b>first</b> potion resolved in a room heals you — any additional potions that same room are wasted.</p>
+
+      <h3>Fleeing a Room</h3>
+      <p>Instead of resolving any cards, flee: all 4 room cards go to the bottom of the deck (in order) and you draw a fresh room. You can't flee two rooms in a row, and you can't flee once you've already resolved a card in the current room.</p>
+
+      <h3>Winning &amp; Scoring</h3>
+      <p>Clear the dungeon and your score equals your remaining HP. If you finish at a full 20 HP <b>and</b> the very last card you resolved was a potion, add that potion's value as a bonus.</p>
+
+      <h3>Losing &amp; Scoring</h3>
+      <p>If your HP hits 0, the run ends immediately. Your score is the negative sum of every monster's value still left in the dungeon (deck + current room).</p>
+    </div>
   </div>
 </div>
 
@@ -780,6 +892,19 @@
       } else {
         window.location.href = 'index.html';
       }
+    });
+  })();
+
+  (function(){
+    var rulesBtn = document.getElementById('tbRules');
+    var rulesOverlay = document.getElementById('rulesOverlay');
+    var rulesClose = document.getElementById('rulesClose');
+    function open(){ rulesOverlay.classList.remove('hidden'); }
+    function close(){ rulesOverlay.classList.add('hidden'); }
+    rulesBtn.addEventListener('click', open);
+    rulesClose.addEventListener('click', close);
+    rulesOverlay.addEventListener('click', function(e){
+      if (e.target === rulesOverlay) close();
     });
   })();
 </script>

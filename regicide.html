@@ -99,6 +99,22 @@
     flex-shrink:0;
   }
   .tb-back:hover{ background:var(--amber); color:#000; }
+  .tb-rules{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    font-family:var(--font-b);
+    font-size:11px;
+    letter-spacing:1px;
+    background:transparent;
+    border:1px solid var(--amber-dim);
+    color:var(--amber);
+    padding:4px 9px;
+    cursor:pointer;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  .tb-rules:hover{ background:var(--amber); color:#000; }
   .titlebar-label{ overflow:hidden; text-overflow:ellipsis; }
 
   @media (max-width:420px){
@@ -307,6 +323,82 @@
     .big-banner{font-size:32px;}
   }
 
+  /* Rules modal (regicide previously had no overlay/modal pattern) */
+  .overlay{
+    position:fixed;inset:0;
+    background:rgba(0,0,0,0.85);
+    display:flex;align-items:flex-start;justify-content:center;
+    z-index:300;
+    padding:20px;
+    padding-top:40px;
+  }
+  .overlay.hidden{ display:none; }
+  .modal{
+    background:var(--panel);
+    border:1px solid var(--amber-dim);
+    box-shadow:0 0 40px rgba(255,179,0,0.15), inset 0 0 40px rgba(0,0,0,0.6);
+    padding:24px 22px;
+    max-width:540px;
+    width:100%;
+    max-height:calc(100vh - 80px);
+    max-height:calc(100dvh - 80px);
+    display:flex;
+    flex-direction:column;
+    text-align:left;
+  }
+  .rules-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:14px;
+    flex-shrink:0;
+  }
+  .rules-header h2{
+    margin:0;
+    font-family:'Press Start 2P', monospace;
+    font-size:14px;
+    color:var(--amber);
+    letter-spacing:1px;
+    text-shadow:0 0 10px var(--amber-glow);
+  }
+  .rules-close{
+    background:transparent;
+    border:1px solid var(--amber-dim);
+    color:var(--amber);
+    width:32px;height:32px;
+    font-size:16px;
+    line-height:1;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .rules-close:hover{ background:var(--amber); color:#000; }
+  .rules-body{
+    overflow-y:auto;
+    padding-right:8px;
+    scrollbar-width:thin;
+    scrollbar-color: var(--amber-dim) #000;
+  }
+  .rules-body h3{
+    font-family:var(--font-b);
+    font-size:12px;
+    letter-spacing:1.5px;
+    color:var(--amber);
+    text-transform:uppercase;
+    margin:18px 0 6px;
+    border-bottom:1px solid var(--amber-dim);
+    padding-bottom:4px;
+  }
+  .rules-body h3:first-child{ margin-top:0; }
+  .rules-body p{
+    margin:0 0 10px;
+    color:var(--white);
+    font-family:var(--font-b);
+    font-size:12.5px;
+    line-height:1.55;
+  }
+  .rules-body p b{ color:var(--amber); }
+
   /* Readability: bolder text overall */
   body, button, input, select {
     font-weight: 700;
@@ -330,9 +422,52 @@
   <div class="titlebar">
     <button class="tb-back" id="tbBack" type="button">&larr; MENU</button>
     <span class="titlebar-label">REGICIDE — SOLO ENGINE v1.0</span>
+    <button class="tb-rules" id="tbRules" type="button">RULES</button>
     <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
   </div>
   <div class="screen" id="screen"></div>
+</div>
+
+<div class="overlay rules hidden" id="rulesOverlay">
+  <div class="modal">
+    <div class="rules-header">
+      <h2>REGICIDE — RULES</h2>
+      <button class="rules-close" id="rulesClose" type="button">&times;</button>
+    </div>
+    <div class="rules-body">
+      <h3>The Decks</h3>
+      <p><b>Tavern deck</b> (40 cards): each suit ♠♥♦♣ has ranks 2–10 plus an Ace. Aces are <b>Animal Companions</b>, worth 1.</p>
+      <p><b>Castle deck</b> (12 cards): the four Jacks (ATK 10, HP 20), then the four Queens (ATK 15, HP 30), then the four Kings (ATK 20, HP 40) — shuffled within each rank, and always fought in that order.</p>
+
+      <h3>Goal</h3>
+      <p>Defeat all 12 royals before your hand fails you. You draw a hand of 8 from the Tavern deck to begin; 8 is always your hand cap.</p>
+
+      <h3>Your Turn</h3>
+      <p>Play a single card, an Animal Companion paired with one other card (combined value = 1 + the other card's value, or 2 if pairing two Companions), or 2–4 cards of the <b>same rank</b> whose values sum to 10 or less — or <b>YIELD</b> to skip your attack entirely.</p>
+
+      <h3>Suit Powers</h3>
+      <p>Each suit present among the card(s) you play triggers once:</p>
+      <p><b>♥ Hearts</b> — shuffle the discard pile, then move that many cards from it to the bottom of the Tavern deck.</p>
+      <p><b>♦ Diamonds</b> — draw that many cards from the Tavern deck (hand cap 8).</p>
+      <p><b>♣ Clubs</b> — the damage you deal this attack is doubled.</p>
+      <p><b>♠ Spades</b> — reduces this enemy's attack by that amount for the rest of the fight (stacks across turns against the same enemy).</p>
+
+      <h3>Immunity</h3>
+      <p>Every royal is immune to its own suit's power — that suit's bonus effect is negated — but the attack's raw value still deals damage as normal.</p>
+
+      <h3>Defeating an Enemy</h3>
+      <p>Damage equal to your combo's value is dealt. If the enemy's HP hits <b>exactly</b> 0, it's an exact strike — the royal is placed face-down on top of the Tavern deck, so you'll draw it again soon. Any overkill sends it to the discard pile instead. Either way, your played cards go to the discard pile and the next royal is revealed.</p>
+
+      <h3>The Enemy Strikes Back</h3>
+      <p>If the enemy survives your attack, it strikes back for (its ATK − any accumulated Spade shield). You must discard cards from your hand totalling at least that amount to survive. If your entire hand's value can't cover it, you fall immediately.</p>
+
+      <h3>The Jester</h3>
+      <p>Twice per game you may flip a Jester: discard your whole hand and draw a fresh 8. Use it before attacking, or before discarding to survive a strike.</p>
+
+      <h3>Winning &amp; Rank</h3>
+      <p>Defeat all 12 royals to win. Your rank depends on how many Jesters you used: <b>0 = GOLD</b>, <b>1 = SILVER</b>, <b>2 = BRONZE</b>.</p>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -796,6 +931,19 @@ newGame();
       } else {
         window.location.href = 'index.html';
       }
+    });
+  })();
+
+  (function(){
+    var rulesBtn = document.getElementById('tbRules');
+    var rulesOverlay = document.getElementById('rulesOverlay');
+    var rulesClose = document.getElementById('rulesClose');
+    function open(){ rulesOverlay.classList.remove('hidden'); }
+    function close(){ rulesOverlay.classList.add('hidden'); }
+    rulesBtn.addEventListener('click', open);
+    rulesClose.addEventListener('click', close);
+    rulesOverlay.addEventListener('click', function(e){
+      if (e.target === rulesOverlay) close();
     });
   })();
 </script>
