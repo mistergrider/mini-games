@@ -234,34 +234,31 @@
     display:flex;
     align-items:center;
     justify-content:center;
-    gap:48px;
+    flex-wrap:wrap;
+    gap:22px;
   }
-  .pile-block{display:flex; flex-direction:column; align-items:center; gap:6px;}
-  .pile-block .label{font-family:var(--font-b); font-size:0.68rem; color:var(--moss); text-transform:uppercase; letter-spacing:0.06em;}
-  .pile-stack{position:relative; width:76px; height:104px;}
+  .pile-block{display:flex; align-items:center;}
+  .label{font-family:var(--font-b); font-size:0.68rem; color:var(--moss); text-transform:uppercase; letter-spacing:0.06em;}
+  .label b{color:var(--white); font-size:0.85rem; margin-left:5px; letter-spacing:normal;}
+  .pile-stack{position:relative; width:76px; height:104px; display:none;}
   .pile-stack .card{position:absolute; top:0; left:0;}
-  .pile-count{
-    position:absolute; bottom:-20px; left:50%; transform:translateX(-50%);
-    font-family:var(--font-b); font-size:0.72rem; color:var(--white);
-  }
 
-  .bogey-zone{
-    display:flex; flex-direction:column; align-items:center; gap:6px;
-    width:110px;
+  .bogey-hand-card{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:5px;
+    margin-right:20px;
   }
-  .bogey-icon{
-    width:56px; height:56px;
-    display:flex; align-items:center; justify-content:center;
-    opacity:0.55;
-    transition:opacity 0.2s ease, transform 0.2s ease;
+  .bogey-hand-label{
+    font-family:var(--font-b); font-size:0.62rem; color:var(--bogey);
+    text-transform:uppercase; letter-spacing:0.08em; white-space:nowrap;
   }
-  .bogey-zone.active .bogey-icon{opacity:1; animation:stir 1.6s ease-in-out infinite;}
-  @keyframes stir{
-    0%,100%{transform:rotate(-4deg) scale(1);}
-    50%{transform:rotate(4deg) scale(1.06);}
+  .bogey-hand-card .card{
+    margin-left:0;
+    box-shadow:0 0 14px 2px rgba(143,255,160,0.55), var(--shadow);
+    border-color:var(--bogey);
   }
-  .bogey-card-slot{width:76px; height:104px; display:flex; align-items:center; justify-content:center;}
-  .bogey-card-slot .card{box-shadow:0 0 14px 2px rgba(143,255,160,0.55), var(--shadow); border-color:var(--bogey);}
 
   .hand-row{
     display:flex;
@@ -271,8 +268,8 @@
     min-height:118px;
     flex-wrap:wrap;
   }
-  .hand-row .card{margin-left:-14px;}
-  .hand-row .card:first-child{margin-left:0;}
+  .hand-row > .card{margin-left:-14px;}
+  .hand-row > .card:first-child{margin-left:0;}
 
   .actions-row{
     display:flex;
@@ -338,8 +335,8 @@
 
     .table{ padding:12px; gap:10px; }
     .board{ justify-content:center; gap:16px 10px; }
-    .column, .card, .ghost-column, .pile-stack, .bogey-card-slot{ width:54px; }
-    .card, .ghost-column, .pile-stack, .bogey-card-slot{ height:74px; }
+    .column, .card, .ghost-column, .pile-stack{ width:54px; }
+    .card, .ghost-column, .pile-stack{ height:74px; }
     .column .card{ margin-top:-48px; }
     .card .pip{ font-size:1.3rem; }
     .card .corner{ font-size:0.6rem; }
@@ -347,7 +344,8 @@
 
     .control-deck{ padding:10px 12px 12px; gap:10px; }
     .piles-row{ gap:20px; }
-    .hand-row .card{ margin-left:-12px; }
+    .hand-row > .card{ margin-left:-12px; }
+    .bogey-hand-card{ margin-right:14px; }
     .actions-row{ gap:8px; }
     .actions-row button{ font-size:0.78rem; padding:7px 10px; }
 
@@ -460,7 +458,7 @@
     font-weight: 700;
   }
   body, button, input, select,
-  .stats, .pile-block .label, .pile-count, .column-label, .field label,
+  .stats, .label, .bogey-hand-label, .column-label, .field label,
   .card .corner, .card .pip, .modal p, .rules-list li, footer.credit,
   .titlebar, .brand span.tag {
     text-shadow: 0.35px 0 0 currentColor, -0.35px 0 0 currentColor;
@@ -502,30 +500,13 @@
 <div class="control-deck">
   <div class="piles-row">
     <div class="pile-block">
-      <span class="label">Draw</span>
+      <span class="label">Draw <b id="drawCount">0</b></span>
       <div class="pile-stack" id="drawPileEl"></div>
-      <span class="pile-count" id="drawCount">0</span>
-    </div>
-
-    <div class="bogey-zone" id="bogeyZone">
-      <span class="label">The Bogey</span>
-      <div class="bogey-icon">
-        <svg viewBox="0 0 40 40" width="44" height="44">
-          <path d="M20 4 C10 4 6 14 6 22 C6 30 12 36 20 36 C28 36 34 30 34 22 C34 14 30 4 20 4 Z" fill="none" stroke="var(--bogey)" stroke-width="2"/>
-          <circle cx="14" cy="20" r="2" fill="var(--bogey)"/>
-          <circle cx="26" cy="20" r="2" fill="var(--bogey)"/>
-          <path d="M12 8 C8 2 4 2 3 6" fill="none" stroke="var(--brass)" stroke-width="2" stroke-linecap="round"/>
-          <path d="M28 8 C32 2 36 2 37 6" fill="none" stroke="var(--brass)" stroke-width="2" stroke-linecap="round"/>
-          <path d="M14 27 Q20 32 26 27" fill="none" stroke="var(--bogey)" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      </div>
-      <div class="bogey-card-slot" id="bogeySlot"></div>
     </div>
 
     <div class="pile-block">
-      <span class="label">Discard</span>
+      <span class="label">Discard <b id="discardCount">0</b></span>
       <div class="pile-stack" id="discardPileEl"></div>
-      <span class="pile-count" id="discardCount">0</span>
     </div>
   </div>
 
@@ -908,15 +889,15 @@
     discardEl.innerHTML = state.discardPile.length > 0 ? `<div class="card back"></div>` : '';
     document.getElementById('discardCount').textContent = state.discardPile.length;
 
-    // Bogey zone
-    const bogeyZone = document.getElementById('bogeyZone');
-    bogeyZone.classList.toggle('active', state.phase === 'bogey');
-    const bogeySlot = document.getElementById('bogeySlot');
-    bogeySlot.innerHTML = state.bogeyCard ? cardHTML(state.bogeyCard, '') : '';
-
-    // Hand
+    // Hand (the Bogey's card, when it's the Bogey's turn, appears first in this same row)
     const handRow = document.getElementById('handRow');
     handRow.innerHTML = '';
+    if(state.phase === 'bogey' && state.bogeyCard){
+      const bogeyWrap = document.createElement('div');
+      bogeyWrap.className = 'bogey-hand-card';
+      bogeyWrap.innerHTML = `<span class="bogey-hand-label">The Bogey</span>${cardHTML(state.bogeyCard, '')}`;
+      handRow.appendChild(bogeyWrap);
+    }
     state.hand.forEach((card, i) => {
       const div = document.createElement('div');
       const selected = state.selectedHandIndices.has(i);
