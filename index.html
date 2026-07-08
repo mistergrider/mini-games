@@ -189,9 +189,12 @@
         <li><button class="menu-item" data-src="bogey.html" data-key="5">
           <span class="idx">5</span> THE BOGEY <span class="desc">TIDY-PILES SOLITAIRE</span>
         </button></li>
+        <li><button class="menu-item" data-src="card-capture.html" data-key="6">
+          <span class="idx">6</span> CARD CAPTURE <span class="desc">SOLITAIRE DECK BUILDER</span>
+        </button></li>
       </ul>
 
-      <div class="footer-hint">PRESS 1–5 OR CLICK TO LAUNCH</div>
+      <div class="footer-hint">PRESS 1–6 OR CLICK TO LAUNCH</div>
     </div>
   </div>
 
@@ -229,7 +232,7 @@
 
   document.addEventListener('keydown', (e) => {
     if (appView.classList.contains('active')) return;
-    const map = { '1':'hp-tracker.html', '2':'scoundrel.html', '3':'regicide.html', '4':'matching.html', '5':'bogey.html' };
+    const map = { '1':'hp-tracker.html', '2':'scoundrel.html', '3':'regicide.html', '4':'matching.html', '5':'bogey.html', '6':'card-capture.html' };
     if (map[e.key]) launch(map[e.key]);
   });
 </script>
