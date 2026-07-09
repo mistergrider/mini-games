@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>APP SELECT</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="./manifest.json">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
@@ -235,6 +236,13 @@
     const map = { '1':'hp-tracker.html', '2':'scoundrel.html', '3':'regicide.html', '4':'matching.html', '5':'bogey.html', '6':'card-capture.html' };
     if (map[e.key]) launch(map[e.key]);
   });
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./service-worker.js');
+    });
+  }
 </script>
 </body>
 </html>
