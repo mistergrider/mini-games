@@ -171,7 +171,9 @@
   .card.empty-slot .center{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;font-family:var(--font-d);}
 
   .card.selectable{cursor:pointer;}
-  .card.selectable:hover{transform:translateY(-6px);box-shadow:0 8px 14px rgba(0,0,0,.4);}
+  @media (hover:hover) and (pointer:fine){
+    .card.selectable:hover{transform:translateY(-6px);box-shadow:0 8px 14px rgba(0,0,0,.4);}
+  }
   .card.selected{transform:translateY(-8px);box-shadow:0 0 0 3px var(--olive-bright), 0 8px 14px rgba(0,0,0,.4);}
   .card.targeted{box-shadow:0 0 0 3px var(--rust-bright), 0 8px 14px rgba(0,0,0,.4);transform:translateY(-8px);}
   .card.disabled-choice{opacity:.35;filter:grayscale(60%);cursor:not-allowed;}
@@ -214,13 +216,9 @@
 
   /* ---------- Phase / action panel (now sits under the hand) ---------- */
   .phase-panel{display:flex;flex-direction:column;gap:16px;margin-top:16px;}
-  .phase-pill{
-    font-family:var(--font-d);font-size:13px;letter-spacing:2px;text-transform:uppercase;
-    color:var(--gold);border:1px solid var(--gold-dim);padding:8px 10px;text-align:center;
-    background:var(--panel-2);
-  }
-  #instructions{font-size:12.5px;line-height:1.55;color:var(--khaki);min-height:40px;}
-  #action-buttons{display:flex;flex-direction:column;gap:8px;margin-top:10px;}
+  .phase-pill{ display:none; }
+  #instructions{ display:none; }
+  #action-buttons{display:flex;flex-direction:row;flex-wrap:wrap;gap:8px;margin-top:10px;}
   button.act{
     font-family:var(--font-d);font-size:13px;letter-spacing:1.5px;text-transform:uppercase;
     padding:11px 10px;border:1px solid var(--olive-bright);background:transparent;
@@ -453,6 +451,10 @@
 
       <div class="zone">
         <div class="zone-label danger">Enemy Forces</div>
+        <div class="row-track" style="margin-bottom:16px; gap:24px;">
+          <span class="deck-count-label">Draw Deck <b id="enemy-draw-count">0</b></span>
+          <span class="deck-count-label">Capture Pile <b id="enemy-capture-count">0</b></span>
+        </div>
         <div class="row-track" id="enemy-row-track"></div>
       </div>
 
@@ -962,7 +964,7 @@
     document.getElementById('disc-count').textContent = G.personalDiscard.length;
 
     // enemy row: display Position 4,3,2,1 left to right (index 3,2,1,0)
-    let rowHTML = `<div class="stack-wrap"><div class="deck-stack"><div class="card-back">ENEMY<br>DRAW</div><div class="deck-count rust">${G.enemyDraw.length}</div></div><div class="pos-label">Draw Deck</div></div>`;
+    let rowHTML = '';
     for(let idx=3; idx>=0; idx--){
       const c = G.row[idx];
       let extra = '';
@@ -986,12 +988,9 @@
       }
       rowHTML += `<div class="pos-label">Position ${idx+1}</div></div>`;
     }
-    rowHTML += `<div class="stack-wrap">${
-      G.enemyCapture.length
-        ? `<div class="deck-stack"><div class="danger-pile"><span class="sk">☠</span></div><div class="deck-count rust">${G.enemyCapture.length}</div></div>`
-        : `<div class="danger-pile" style="opacity:.5;"><span class="sk">☠</span></div>`
-    }<div class="pos-label">Capture Pile</div></div>`;
     document.getElementById('enemy-row-track').innerHTML = rowHTML;
+    document.getElementById('enemy-draw-count').textContent = G.enemyDraw.length;
+    document.getElementById('enemy-capture-count').textContent = G.enemyCapture.length;
 
     // hand
     let handHTML = '';
@@ -1086,6 +1085,7 @@
 
         let btns = '';
         let canConfirm = false;
+        const hasSelection = (G.captureTarget!=null) || (G.captureSpend.length>0);
         if(target){
           const okSuit = info.suit===target.suit;
           const okTotal = info.total>=target.rank;
@@ -1097,7 +1097,6 @@
             <br>Need: <b>${target.rank} ${target.suit}</b>
             ${G.captureSpend.length>0 ? (okSuit&&okTotal?'<span class="ok"> ✓ ready</span>':'<span class="bad"> ✗ not enough / wrong suit</span>') : ''}
           `;
-          btns += `<button class="act primary" onclick="UI.confirmCapture()" ${canConfirm?'':'disabled'}>Confirm Capture</button>`;
         } else if(G.captureSpend.length>0){
           readout.style.display='block';
           readout.innerHTML = `
@@ -1106,11 +1105,13 @@
             ${info.unresolved?'<span class="bad">(select a card for the Joker to double)</span>':''}
           `;
         }
-        if(G.captureTarget!=null || G.captureSpend.length>0){
+        if(hasSelection){
+          btns += `<button class="act primary" onclick="UI.confirmCapture()" ${canConfirm?'':'disabled'}>Confirm Capture</button>`;
           btns += `<button class="act cancel" onclick="UI.clearCaptureSelection()">Clear Selection</button>`;
+        } else {
+          btns += `<button class="act" onclick="UI.setMode('sacrifice')" ${G.hand.length<2?'disabled':''}>Sacrifice Two Cards</button>`;
+          btns += `<button class="act danger" onclick="UI.setMode('concede')" ${!G.row[0]||G.hand.length<1?'disabled':''}>Concede to Position 1</button>`;
         }
-        btns += `<button class="act" onclick="UI.setMode('sacrifice')" ${G.hand.length<2?'disabled':''}>Sacrifice Two Cards</button>`;
-        btns += `<button class="act danger" onclick="UI.setMode('concede')" ${!G.row[0]||G.hand.length<1?'disabled':''}>Concede to Position 1</button>`;
         actions.innerHTML = btns;
 
         if(G.jokerPending!=null){
